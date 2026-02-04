@@ -5,18 +5,22 @@ import src.Student.model.Student;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.util.List;
+import java.util.ArrayList;
 
 public class StudentPanel extends JPanel {
-
     private Student currentStudent;
     private StudentController controller;
     
-    // ui Components
-    private JTextField txtTitle, txtSupervisor, txtFilePath;
+    // UI Components
+    private JTextField txtTitle, txtFilePath;
     private JTextArea txtAbstract;
-    private JComboBox<String> cbType;
+    private JComboBox<String> cbType, cbSupervisor, cbAssignedEvaluator;
     private JButton btnUpload, btnSubmit;
-
+    
+    // Supervisor options
+    private String[] supervisors = {"Dr. Smith", "Prof. Chen", "Dr. Lee", "Prof. Kumar", "Dr. Johnson"};
+    
     public StudentPanel(Student student) {
         this.currentStudent = student;
         this.controller = new StudentController();
@@ -25,7 +29,7 @@ public class StudentPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Header
-        JLabel lblHeader = new JLabel("Student Seminar Registration: " + student.getName());
+        JLabel lblHeader = new JLabel("Student Seminar Registration: " + student.getName() + " (" + student.getStudentId() + ")");
         lblHeader.setFont(new Font("Arial", Font.BOLD, 18));
         lblHeader.setHorizontalAlignment(SwingConstants.CENTER);
         add(lblHeader, BorderLayout.NORTH);
@@ -40,24 +44,24 @@ public class StudentPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 0;
         formPanel.add(new JLabel("Research Title:"), gbc);
         gbc.gridx = 1;
-        txtTitle = new JTextField(20);
+        txtTitle = new JTextField(25);
         formPanel.add(txtTitle, gbc);
 
         // 2. Abstract
         gbc.gridx = 0; gbc.gridy = 1;
         formPanel.add(new JLabel("Abstract:"), gbc);
         gbc.gridx = 1;
-        txtAbstract = new JTextArea(5, 20);
+        txtAbstract = new JTextArea(5, 25);
         txtAbstract.setLineWrap(true);
         JScrollPane scrollAbstract = new JScrollPane(txtAbstract);
         formPanel.add(scrollAbstract, gbc);
 
         // 3. Supervisor
         gbc.gridx = 0; gbc.gridy = 2;
-        formPanel.add(new JLabel("Supervisor Name:"), gbc);
+        formPanel.add(new JLabel("Supervisor:"), gbc);
         gbc.gridx = 1;
-        txtSupervisor = new JTextField(20);
-        formPanel.add(txtSupervisor, gbc);
+        cbSupervisor = new JComboBox<>(supervisors);
+        formPanel.add(cbSupervisor, gbc);
 
         // 4. Presentation Type
         gbc.gridx = 0; gbc.gridy = 3;
@@ -79,6 +83,15 @@ public class StudentPanel extends JPanel {
         filePanel.add(btnUpload, BorderLayout.EAST);
         formPanel.add(filePanel, gbc);
 
+        // 6. Assigned Evaluator (Read-only, shows coordinator's assignment)
+        gbc.gridx = 0; gbc.gridy = 5;
+        formPanel.add(new JLabel("Assigned Evaluator:"), gbc);
+        gbc.gridx = 1;
+        cbAssignedEvaluator = new JComboBox<>();
+        cbAssignedEvaluator.setEnabled(false);
+        loadAssignedEvaluator();
+        formPanel.add(cbAssignedEvaluator, gbc);
+
         add(formPanel, BorderLayout.CENTER);
 
         // Submit Button
@@ -90,6 +103,43 @@ public class StudentPanel extends JPanel {
 
         // Action Listeners
         setupListeners();
+    }
+
+    private void loadAssignedEvaluator() {
+        // Load assigned evaluator from assignments file
+        File assignmentFile = new File("assignments.txt");
+        if (assignmentFile.exists()) {
+            try {
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(assignmentFile));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.split("\\|");
+                    if (parts.length >= 4 && parts[2].equals(currentStudent.getStudentId())) {
+                        String evaluatorId = parts[3];
+                        // Map evaluator ID to name
+                        String evaluatorName = getEvaluatorName(evaluatorId);
+                        cbAssignedEvaluator.addItem(evaluatorName);
+                        break;
+                    }
+                }
+                reader.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        
+        if (cbAssignedEvaluator.getItemCount() == 0) {
+            cbAssignedEvaluator.addItem("Not assigned yet");
+        }
+    }
+    
+    private String getEvaluatorName(String evaluatorId) {
+        // Map evaluator IDs to names
+        switch (evaluatorId) {
+            case "EVAL001": return "Dr. Smith";
+            case "EVAL002": return "Prof. Chen";
+            default: return evaluatorId;
+        }
     }
 
     private void setupListeners() {
@@ -107,12 +157,12 @@ public class StudentPanel extends JPanel {
         btnSubmit.addActionListener(e -> {
             String title = txtTitle.getText();
             String abs = txtAbstract.getText();
-            String sup = txtSupervisor.getText();
+            String sup = (String) cbSupervisor.getSelectedItem();
             String type = (String) cbType.getSelectedItem();
             String path = txtFilePath.getText();
 
-            if (title.isEmpty() || abs.isEmpty() || sup.isEmpty() || path.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please fill all fields.", "Error", JOptionPane.ERROR_MESSAGE);
+            if (title.isEmpty() || abs.isEmpty() || path.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill all required fields.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
@@ -121,7 +171,13 @@ public class StudentPanel extends JPanel {
             
             if (success) {
                 JOptionPane.showMessageDialog(this, "Submission Successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
-                btnSubmit.setEnabled(false); // Prevent double submission
+                btnSubmit.setEnabled(false);
+                // Disable all fields after submission
+                txtTitle.setEnabled(false);
+                txtAbstract.setEnabled(false);
+                cbSupervisor.setEnabled(false);
+                cbType.setEnabled(false);
+                btnUpload.setEnabled(false);
             } else {
                 JOptionPane.showMessageDialog(this, "Error saving data.", "Error", JOptionPane.ERROR_MESSAGE);
             }

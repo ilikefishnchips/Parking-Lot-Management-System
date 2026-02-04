@@ -5,11 +5,12 @@ import src.Coordinator.controller.ReportController;
 import src.Coordinator.model.Session;
 import src.common.model.Report;
 import src.common.model.Award;
-import src.common.model.Submission;
-import src.common.model.Evaluation;
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.List;
 
 public class CoordinatorPanel extends JPanel {
@@ -18,11 +19,16 @@ public class CoordinatorPanel extends JPanel {
     
     private JTabbedPane tabbedPane;
     
+    // User lists
+    private List<String> studentList;
+    private List<String> evaluatorList;
+    
     // Session Management Tab
     private JList<Session> sessionList;
     private DefaultListModel<Session> sessionListModel;
-    private JTextField txtDate, txtTime, txtVenue, txtType, txtCapacity;
-    private JTextArea txtStudents, txtEvaluators;
+    private JTextField txtDate, txtTime, txtVenue, txtCapacity;
+    private JComboBox<String> cbType;
+    private JList<String> studentSelector, evaluatorSelector;
     
     // Reports Tab
     private JTextArea reportArea;
@@ -32,12 +38,22 @@ public class CoordinatorPanel extends JPanel {
     private JTextArea awardArea;
     private JButton btnComputeAwards;
     
+    // Date formatter for validation
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    private SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+    
     public CoordinatorPanel() {
         this.sessionController = new SessionController();
         this.reportController = new ReportController();
+        initializeUserLists();
         
         initUI();
         loadSessions();
+    }
+    
+    private void initializeUserLists() {
+        studentList = Arrays.asList("STU001 - John Doe", "STU002 - Jane Smith", "STU003 - Bob Johnson");
+        evaluatorList = Arrays.asList("EVAL001 - Dr. Smith", "EVAL002 - Prof. Chen");
     }
     
     private void initUI() {
@@ -65,8 +81,10 @@ public class CoordinatorPanel extends JPanel {
         sessionListModel = new DefaultListModel<>();
         sessionList = new JList<>(sessionListModel);
         sessionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        sessionList.setCellRenderer(new SessionCellRenderer());
         JScrollPane listScroll = new JScrollPane(sessionList);
-        panel.add(listScroll, BorderLayout.CENTER);
+        listScroll.setPreferredSize(new Dimension(300, 400));
+        panel.add(listScroll, BorderLayout.WEST);
         
         // Session Form
         JPanel formPanel = new JPanel(new GridBagLayout());
@@ -76,12 +94,16 @@ public class CoordinatorPanel extends JPanel {
         
         int row = 0;
         
-        // Date
+        // Date (Date Picker style)
         gbc.gridx = 0; gbc.gridy = row;
         formPanel.add(new JLabel("Date (YYYY-MM-DD):"), gbc);
         gbc.gridx = 1;
         txtDate = new JTextField(15);
         formPanel.add(txtDate, gbc);
+        gbc.gridx = 2;
+        JButton btnToday = new JButton("Today");
+        btnToday.addActionListener(e -> txtDate.setText(new SimpleDateFormat("yyyy-MM-dd").format(new Date())));
+        formPanel.add(btnToday, gbc);
         
         // Time
         gbc.gridx = 0; gbc.gridy = ++row;
@@ -89,46 +111,58 @@ public class CoordinatorPanel extends JPanel {
         gbc.gridx = 1;
         txtTime = new JTextField(15);
         formPanel.add(txtTime, gbc);
+        gbc.gridx = 2;
+        JButton btnNow = new JButton("Now");
+        btnNow.addActionListener(e -> txtTime.setText(new SimpleDateFormat("HH:mm").format(new Date())));
+        formPanel.add(btnNow, gbc);
         
         // Venue
         gbc.gridx = 0; gbc.gridy = ++row;
         formPanel.add(new JLabel("Venue:"), gbc);
-        gbc.gridx = 1;
+        gbc.gridx = 1; gbc.gridwidth = 2;
         txtVenue = new JTextField(15);
         formPanel.add(txtVenue, gbc);
         
-        // Type
+        // Type Dropdown
         gbc.gridx = 0; gbc.gridy = ++row;
-        formPanel.add(new JLabel("Type (Oral/Poster):"), gbc);
-        gbc.gridx = 1;
-        txtType = new JTextField(15);
-        formPanel.add(txtType, gbc);
+        gbc.gridwidth = 1;
+        formPanel.add(new JLabel("Type:"), gbc);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        String[] types = {"Oral Presentation", "Poster Presentation"};
+        cbType = new JComboBox<>(types);
+        formPanel.add(cbType, gbc);
         
         // Capacity
         gbc.gridx = 0; gbc.gridy = ++row;
+        gbc.gridwidth = 1;
         formPanel.add(new JLabel("Capacity:"), gbc);
-        gbc.gridx = 1;
+        gbc.gridx = 1; gbc.gridwidth = 2;
         txtCapacity = new JTextField(15);
         formPanel.add(txtCapacity, gbc);
         
-        // Students
+        // Student Selector (Multiple selection)
         gbc.gridx = 0; gbc.gridy = ++row;
-        formPanel.add(new JLabel("Student IDs (comma separated):"), gbc);
-        gbc.gridx = 1;
-        txtStudents = new JTextArea(3, 15);
-        JScrollPane studentScroll = new JScrollPane(txtStudents);
+        gbc.gridwidth = 1;
+        formPanel.add(new JLabel("Select Students:"), gbc);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        studentSelector = new JList<>(studentList.toArray(new String[0]));
+        studentSelector.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        JScrollPane studentScroll = new JScrollPane(studentSelector);
+        studentScroll.setPreferredSize(new Dimension(200, 100));
         formPanel.add(studentScroll, gbc);
         
-        // Evaluators
+        // Evaluator Selector (Multiple selection)
         gbc.gridx = 0; gbc.gridy = ++row;
-        formPanel.add(new JLabel("Evaluator IDs (comma separated):"), gbc);
-        gbc.gridx = 1;
-        txtEvaluators = new JTextArea(3, 15);
-        JScrollPane evaluatorScroll = new JScrollPane(txtEvaluators);
+        formPanel.add(new JLabel("Select Evaluators:"), gbc);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        evaluatorSelector = new JList<>(evaluatorList.toArray(new String[0]));
+        evaluatorSelector.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        JScrollPane evaluatorScroll = new JScrollPane(evaluatorSelector);
+        evaluatorScroll.setPreferredSize(new Dimension(200, 100));
         formPanel.add(evaluatorScroll, gbc);
         
-        // Buttons
-        JPanel buttonPanel = new JPanel(new FlowLayout());
+        // Buttons Panel
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 3, 10, 10));
         JButton btnCreate = new JButton("Create Session");
         JButton btnUpdate = new JButton("Update Session");
         JButton btnDelete = new JButton("Delete Session");
@@ -138,25 +172,20 @@ public class CoordinatorPanel extends JPanel {
         buttonPanel.add(btnDelete);
         
         gbc.gridx = 0; gbc.gridy = ++row;
-        gbc.gridwidth = 2;
+        gbc.gridwidth = 3;
         formPanel.add(buttonPanel, gbc);
         
-        panel.add(formPanel, BorderLayout.SOUTH);
+        panel.add(formPanel, BorderLayout.CENTER);
         
-        // Add listeners
+        // Session selection listener
         sessionList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && sessionList.getSelectedValue() != null) {
                 Session selected = sessionList.getSelectedValue();
-                txtDate.setText(selected.getDate());
-                txtTime.setText(selected.getTime());
-                txtVenue.setText(selected.getVenue());
-                txtType.setText(selected.getSessionType());
-                txtCapacity.setText(String.valueOf(selected.getMaxCapacity()));
-                txtStudents.setText(String.join(",", selected.getStudentIds()));
-                txtEvaluators.setText(String.join(",", selected.getEvaluatorIds()));
+                loadSessionData(selected);
             }
         });
         
+        // Button listeners
         btnCreate.addActionListener(e -> createSession());
         btnUpdate.addActionListener(e -> updateSession());
         btnDelete.addActionListener(e -> deleteSession());
@@ -219,6 +248,23 @@ public class CoordinatorPanel extends JPanel {
         return panel;
     }
     
+    private class SessionCellRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, 
+                int index, boolean isSelected, boolean cellHasFocus) {
+            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            if (value instanceof Session) {
+                Session session = (Session) value;
+                setText(String.format("%s: %s %s (%s)", 
+                    session.getSessionId(),
+                    session.getDate(),
+                    session.getTime(),
+                    session.getSessionType()));
+            }
+            return this;
+        }
+    }
+    
     private void loadSessions() {
         sessionListModel.clear();
         List<Session> sessions = sessionController.getAllSessions();
@@ -227,33 +273,121 @@ public class CoordinatorPanel extends JPanel {
         }
     }
     
+    private void loadSessionData(Session session) {
+        txtDate.setText(session.getDate());
+        txtTime.setText(session.getTime());
+        txtVenue.setText(session.getVenue());
+        txtCapacity.setText(String.valueOf(session.getMaxCapacity()));
+        
+        // Set type
+        for (int i = 0; i < cbType.getItemCount(); i++) {
+            if (cbType.getItemAt(i).equals(session.getSessionType())) {
+                cbType.setSelectedIndex(i);
+                break;
+            }
+        }
+        
+        // Select students
+        List<String> selectedStudents = new ArrayList<>();
+        for (String studentId : session.getStudentIds()) {
+            for (String studentItem : studentList) {
+                if (studentItem.startsWith(studentId)) {
+                    selectedStudents.add(studentItem);
+                    break;
+                }
+            }
+        }
+        studentSelector.setSelectedIndices(getIndices(selectedStudents, studentList));
+        
+        // Select evaluators
+        List<String> selectedEvaluators = new ArrayList<>();
+        for (String evaluatorId : session.getEvaluatorIds()) {
+            for (String evaluatorItem : evaluatorList) {
+                if (evaluatorItem.startsWith(evaluatorId)) {
+                    selectedEvaluators.add(evaluatorItem);
+                    break;
+                }
+            }
+        }
+        evaluatorSelector.setSelectedIndices(getIndices(selectedEvaluators, evaluatorList));
+    }
+    
+    private int[] getIndices(List<String> selectedItems, List<String> allItems) {
+        List<Integer> indices = new ArrayList<>();
+        for (String selected : selectedItems) {
+            int index = allItems.indexOf(selected);
+            if (index >= 0) {
+                indices.add(index);
+            }
+        }
+        return indices.stream().mapToInt(i -> i).toArray();
+    }
+    
+    private boolean checkTimeConflict(String date, String time) {
+        try {
+            Date newDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(date + " " + time);
+            
+            for (int i = 0; i < sessionListModel.size(); i++) {
+                Session existing = sessionListModel.get(i);
+                if (sessionList.getSelectedValue() != null && 
+                    existing.getSessionId().equals(sessionList.getSelectedValue().getSessionId())) {
+                    continue; // Skip the session being edited
+                }
+                
+                Date existingDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm")
+                    .parse(existing.getDate() + " " + existing.getTime());
+                
+                // Check if same date and within 2 hours (assuming sessions are 2 hours)
+                if (existing.getDate().equals(date)) {
+                    long diffHours = Math.abs(newDateTime.getTime() - existingDateTime.getTime()) / (1000 * 60 * 60);
+                    if (diffHours < 2) {
+                        JOptionPane.showMessageDialog(this,
+                            "Time conflict with session " + existing.getSessionId() + 
+                            " at " + existing.getTime(),
+                            "Time Conflict", JOptionPane.WARNING_MESSAGE);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } catch (ParseException e) {
+            return false;
+        }
+    }
+    
     private void createSession() {
         try {
-            String sessionId = "SESS" + System.currentTimeMillis() % 10000;
+            // Validate fields
+            if (txtDate.getText().isEmpty() || txtTime.getText().isEmpty() || 
+                txtVenue.getText().isEmpty() || txtCapacity.getText().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill all required fields.");
+                return;
+            }
+            
+            // Check time conflict
+            if (checkTimeConflict(txtDate.getText(), txtTime.getText())) {
+                return;
+            }
+            
+            String sessionId = "SESS" + (sessionListModel.size() + 1);
             String date = txtDate.getText();
             String time = txtTime.getText();
             String venue = txtVenue.getText();
-            String type = txtType.getText();
+            String type = (String) cbType.getSelectedItem();
             int capacity = Integer.parseInt(txtCapacity.getText());
             
             Session session = new Session(sessionId, date, time, venue, type, capacity);
             
-            // Add students
-            String[] studentIds = txtStudents.getText().split(",");
-            for (String id : studentIds) {
-                id = id.trim();
-                if (!id.isEmpty()) {
-                    session.addStudent(id);
-                }
+            // Add selected students
+            for (String studentItem : studentSelector.getSelectedValuesList()) {
+                String studentId = studentItem.split(" - ")[0];
+                session.addStudent(studentId);
             }
             
-            // Add evaluators
-            String[] evaluatorIds = txtEvaluators.getText().split(",");
-            for (String id : evaluatorIds) {
-                id = id.trim();
-                if (!id.isEmpty()) {
-                    session.addEvaluator(id);
-                }
+            // Add selected evaluators
+            for (String evaluatorItem : evaluatorSelector.getSelectedValuesList()) {
+                String evaluatorId = evaluatorItem.split(" - ")[0];
+                session.addEvaluator(evaluatorId);
             }
             
             if (sessionController.createSession(session)) {
@@ -276,29 +410,28 @@ public class CoordinatorPanel extends JPanel {
         }
         
         try {
+            // Check time conflict
+            if (checkTimeConflict(txtDate.getText(), txtTime.getText())) {
+                return;
+            }
+            
             selected.setDate(txtDate.getText());
             selected.setTime(txtTime.getText());
             selected.setVenue(txtVenue.getText());
-            selected.setSessionType(txtType.getText());
+            selected.setSessionType((String) cbType.getSelectedItem());
             
             // Update students
             selected.getStudentIds().clear();
-            String[] studentIds = txtStudents.getText().split(",");
-            for (String id : studentIds) {
-                id = id.trim();
-                if (!id.isEmpty()) {
-                    selected.addStudent(id);
-                }
+            for (String studentItem : studentSelector.getSelectedValuesList()) {
+                String studentId = studentItem.split(" - ")[0];
+                selected.addStudent(studentId);
             }
             
             // Update evaluators
             selected.getEvaluatorIds().clear();
-            String[] evaluatorIds = txtEvaluators.getText().split(",");
-            for (String id : evaluatorIds) {
-                id = id.trim();
-                if (!id.isEmpty()) {
-                    selected.addEvaluator(id);
-                }
+            for (String evaluatorItem : evaluatorSelector.getSelectedValuesList()) {
+                String evaluatorId = evaluatorItem.split(" - ")[0];
+                selected.addEvaluator(evaluatorId);
             }
             
             if (sessionController.updateSession(selected)) {
@@ -389,9 +522,8 @@ public class CoordinatorPanel extends JPanel {
         txtDate.setText("");
         txtTime.setText("");
         txtVenue.setText("");
-        txtType.setText("");
         txtCapacity.setText("");
-        txtStudents.setText("");
-        txtEvaluators.setText("");
+        studentSelector.clearSelection();
+        evaluatorSelector.clearSelection();
     }
 }

@@ -7,13 +7,50 @@ import src.Evaluator.ui.EvaluatorPanel;
 import src.Coordinator.ui.CoordinatorPanel;
 import javax.swing.*;
 import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class LoginPanel extends JPanel {
     private JFrame parentFrame;
+    private Map<String, UserData> userDatabase;
+    
+    // User data class
+    private class UserData {
+        String id;
+        String name;
+        String password;
+        String role;
+        String additionalInfo;
+        
+        UserData(String id, String name, String password, String role, String additionalInfo) {
+            this.id = id;
+            this.name = name;
+            this.password = password;
+            this.role = role;
+            this.additionalInfo = additionalInfo;
+        }
+    }
     
     public LoginPanel(JFrame parentFrame) {
         this.parentFrame = parentFrame;
+        initializeUserDatabase();
         initUI();
+    }
+    
+    private void initializeUserDatabase() {
+        userDatabase = new HashMap<>();
+        
+        // Students
+        userDatabase.put("student1", new UserData("STU001", "John Doe", "student123", "Student", "Computer Science"));
+        userDatabase.put("student2", new UserData("STU002", "Jane Smith", "student456", "Student", "Data Science"));
+        userDatabase.put("student3", new UserData("STU003", "Bob Johnson", "student789", "Student", "AI Research"));
+        
+        // Evaluators
+        userDatabase.put("evaluator1", new UserData("EVAL001", "Dr. Smith", "eval123", "Evaluator", "Senior Lecturer"));
+        userDatabase.put("evaluator2", new UserData("EVAL002", "Prof. Chen", "eval456", "Evaluator", "Department Head"));
+        
+        // Coordinator
+        userDatabase.put("admin", new UserData("COORD001", "Dr. Lee", "admin123", "Coordinator", "Seminar Coordinator"));
     }
     
     private void initUI() {
@@ -29,13 +66,7 @@ public class LoginPanel extends JPanel {
         gbc.anchor = GridBagConstraints.CENTER;
         add(title, gbc);
         
-        // Subtitle
-        JLabel subtitle = new JLabel("Faculty of Computing and Informatics");
-        subtitle.setFont(new Font("Arial", Font.PLAIN, 14));
-        gbc.gridy = 1;
-        add(subtitle, gbc);
-        
-        // Login Form Panel
+        // Login Form
         JPanel formPanel = new JPanel(new GridBagLayout());
         GridBagConstraints fgbc = new GridBagConstraints();
         fgbc.insets = new Insets(5, 5, 5, 5);
@@ -55,8 +86,8 @@ public class LoginPanel extends JPanel {
         fgbc.gridx = 0; fgbc.gridy = ++row;
         formPanel.add(new JLabel("Username:"), fgbc);
         fgbc.gridx = 1;
-        JTextField usernameField = new JTextField(15);
-        formPanel.add(usernameField, fgbc);
+        JComboBox<String> usernameCombo = new JComboBox<>(new String[]{"student1", "student2", "student3", "evaluator1", "evaluator2", "admin"});
+        formPanel.add(usernameCombo, fgbc);
         
         // Password
         fgbc.gridx = 0; fgbc.gridy = ++row;
@@ -74,70 +105,52 @@ public class LoginPanel extends JPanel {
         loginButton.setForeground(Color.WHITE);
         formPanel.add(loginButton, fgbc);
         
-        // Demo credentials
-        JLabel demoLabel = new JLabel("Demo: student/student123, evaluator/evaluator123, admin/admin123");
-        demoLabel.setFont(new Font("Arial", Font.ITALIC, 10));
-        demoLabel.setForeground(Color.GRAY);
-        fgbc.gridy = ++row;
-        formPanel.add(demoLabel, fgbc);
+        // Auto-fill password when username selected
+        usernameCombo.addActionListener(e -> {
+            String username = (String) usernameCombo.getSelectedItem();
+            if (userDatabase.containsKey(username)) {
+                passwordField.setText(userDatabase.get(username).password);
+            }
+        });
         
-        // Add form to main panel
-        gbc.gridy = 2;
-        gbc.gridwidth = 1;
-        add(formPanel, gbc);
-        
-        // Action listener for login button
+        // Login action
         loginButton.addActionListener(e -> {
             String role = (String) roleCombo.getSelectedItem();
-            String username = usernameField.getText();
+            String username = (String) usernameCombo.getSelectedItem();
             String password = new String(passwordField.getPassword());
             
-            // Simple authentication (for demo purposes)
-            boolean authenticated = authenticate(role, username, password);
-            
-            if (authenticated) {
-                switchToPanel(role, username);
+            UserData user = userDatabase.get(username);
+            if (user != null && user.password.equals(password) && user.role.equals(role)) {
+                switchToPanel(user);
             } else {
                 JOptionPane.showMessageDialog(this,
-                    "Login failed. Try:\n" +
-                    "Student: student/student123\n" +
-                    "Evaluator: evaluator/evaluator123\n" +
-                    "Coordinator: admin/admin123",
+                    "Login failed. Please check credentials.",
                     "Login Error",
                     JOptionPane.ERROR_MESSAGE);
             }
         });
+        
+        // Add form to main panel
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        add(formPanel, gbc);
     }
     
-    private boolean authenticate(String role, String username, String password) {
-        // Simple hardcoded authentication for demo
-        switch (role) {
-            case "Student":
-                return username.equals("student") && password.equals("student123");
-            case "Evaluator":
-                return username.equals("evaluator") && password.equals("evaluator123");
-            case "Coordinator":
-                return username.equals("admin") && password.equals("admin123");
-            default:
-                return false;
-        }
-    }
-    
-    private void switchToPanel(String role, String username) {
+    private void switchToPanel(UserData user) {
         parentFrame.getContentPane().removeAll();
         
-        switch (role) {
+        switch (user.role) {
             case "Student":
-                Student student = new Student("STU001", username, "student123", "John Doe");
+                Student student = new Student(user.id, user.name, user.password, user.name);
                 parentFrame.add(new StudentPanel(student));
-                parentFrame.setTitle("Student Dashboard - " + student.getName());
+                parentFrame.setTitle("Student: " + user.name);
                 break;
                 
             case "Evaluator":
-                Evaluator evaluator = new Evaluator("EVAL001", username, "evaluator123", 
-                                                    "Dr. Smith", "Computing Department");
+                Evaluator evaluator = new Evaluator(user.id, user.name, user.password, 
+                                                    user.name, user.additionalInfo);
                 parentFrame.add(new EvaluatorPanel(evaluator));
-                parentFrame.setTitle("Evaluator Dashboard - " + evaluator.getName());
+                parentFrame.setTitle("Evaluator: " + user.name);
                 break;
                 
             case "Coordinator":

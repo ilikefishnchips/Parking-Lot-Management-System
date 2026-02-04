@@ -6,10 +6,8 @@ import src.common.model.Submission;
 import src.common.model.Evaluation;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.Desktop;  // Add this import
-import java.io.File;      // Add this import
+import java.io.File;
 import java.util.List;
-import java.util.UUID;
 
 public class EvaluatorPanel extends JPanel {
     private Evaluator currentEvaluator;
@@ -22,12 +20,12 @@ public class EvaluatorPanel extends JPanel {
     private JLabel problemLabel, methodLabel, resultsLabel, presentationLabel, totalLabel;
     private JTextArea commentsArea;
     private JButton btnSubmit;
-    private JButton btnOpenFile;  // Added button
     
     public EvaluatorPanel(Evaluator evaluator) {
         this.currentEvaluator = evaluator;
         this.controller = new EvaluationController();
-        this.assignedSubmissions = controller.getAssignedSubmissions(evaluator.getId());
+        // Load only submissions assigned to this specific evaluator
+        this.assignedSubmissions = controller.getAssignedSubmissionsForEvaluator(evaluator.getId());
         
         initUI();
         setupListeners();
@@ -38,7 +36,7 @@ public class EvaluatorPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
         // Header
-        JLabel header = new JLabel("Evaluator Dashboard: " + currentEvaluator.getName());
+        JLabel header = new JLabel("Evaluator Dashboard: " + currentEvaluator.getName() + " (" + currentEvaluator.getId() + ")");
         header.setFont(new Font("Arial", Font.BOLD, 18));
         header.setHorizontalAlignment(SwingConstants.CENTER);
         add(header, BorderLayout.NORTH);
@@ -61,24 +59,21 @@ public class EvaluatorPanel extends JPanel {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof Submission) {
                     Submission sub = (Submission) value;
-                    setText(sub.getTitle() + " (Student: " + sub.getStudentId() + ")");
+                    setText(sub.getTitle() + " (Student: " + getStudentName(sub.getStudentId()) + ")");
                 }
                 return this;
             }
         });
         mainPanel.add(submissionCombo, gbc);
         
-        // ============ ADDED: OPEN FILE BUTTON ============
+        // Open File Button
         gbc.gridx = 2;
-        btnOpenFile = new JButton("📂 Open File");
-        btnOpenFile.setToolTipText("Open the full presentation file");
+        JButton btnOpenFile = new JButton("📂 Open File");
+        btnOpenFile.addActionListener(e -> openSelectedFile());
         mainPanel.add(btnOpenFile, gbc);
-        // ============ END OF ADDED CODE ============
-        
-        // Reset grid position for next row
-        gbc.gridx = 0; gbc.gridy = 1;
         
         // Problem Clarity
+        gbc.gridx = 0; gbc.gridy = 1;
         mainPanel.add(new JLabel("Problem Clarity:"), gbc);
         gbc.gridx = 1;
         JPanel problemPanel = new JPanel(new BorderLayout());
@@ -148,6 +143,29 @@ public class EvaluatorPanel extends JPanel {
         add(btnSubmit, BorderLayout.SOUTH);
     }
     
+    private void openSelectedFile() {
+        Submission selected = (Submission) submissionCombo.getSelectedItem();
+        if (selected == null) {
+            JOptionPane.showMessageDialog(this, "Please select a submission first.");
+            return;
+        }
+        
+        try {
+            File file = new File(selected.getPresentationFilePath());
+            if (file.exists()) {
+                java.awt.Desktop.getDesktop().open(file);
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "File not found: " + file.getPath(), 
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, 
+                "Cannot open file: " + ex.getMessage(), 
+                "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
     private JSlider createSlider(int min, int max, int initial) {
         JSlider slider = new JSlider(min, max, initial);
         slider.setMajorTickSpacing(1);
@@ -156,8 +174,16 @@ public class EvaluatorPanel extends JPanel {
         return slider;
     }
     
+    private String getStudentName(String studentId) {
+        switch (studentId) {
+            case "STU001": return "John Doe";
+            case "STU002": return "Jane Smith";
+            case "STU003": return "Bob Johnson";
+            default: return studentId;
+        }
+    }
+    
     private void setupListeners() {
-        // Update labels when sliders change
         problemSlider.addChangeListener(e -> {
             problemLabel.setText(String.valueOf(problemSlider.getValue()));
             updateTotal();
@@ -178,49 +204,6 @@ public class EvaluatorPanel extends JPanel {
             updateTotal();
         });
         
-        // ============ ADDED: FILE OPENING LISTENER ============
-        btnOpenFile.addActionListener(e -> {
-            Submission selected = (Submission) submissionCombo.getSelectedItem();
-            if (selected == null) {
-                JOptionPane.showMessageDialog(this, "Please select a submission first.");
-                return;
-            }
-            
-            try {
-                // Get file path - need to add getPresentationFilePath() to Submission class
-                String filePath = selected.getPresentationFilePath();
-                if (filePath == null || filePath.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, 
-                        "No file path available for this submission.", 
-                        "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                
-                File file = new File(filePath);
-                if (file.exists()) {
-                    // Ask for confirmation
-                    int choice = JOptionPane.showConfirmDialog(this,
-                        "Open file:\n" + file.getName() + "\n\nLocated at:\n" + file.getParent(),
-                        "Open Presentation File",
-                        JOptionPane.YES_NO_OPTION);
-                    
-                    if (choice == JOptionPane.YES_OPTION) {
-                        Desktop.getDesktop().open(file);
-                    }
-                } else {
-                    JOptionPane.showMessageDialog(this, 
-                        "File not found:\n" + file.getPath(), 
-                        "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, 
-                    "Cannot open file: " + ex.getMessage(), 
-                    "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-        // ============ END OF ADDED CODE ============
-        
-        // Submit evaluation
         btnSubmit.addActionListener(e -> submitEvaluation());
     }
     
@@ -237,7 +220,6 @@ public class EvaluatorPanel extends JPanel {
             return;
         }
         
-        // Check if already evaluated
         if (controller.hasEvaluated(selected.getStudentId(), currentEvaluator.getId())) {
             JOptionPane.showMessageDialog(this, 
                 "You have already evaluated this submission.", 
@@ -245,8 +227,7 @@ public class EvaluatorPanel extends JPanel {
             return;
         }
         
-        // Create evaluation
-        String evalId = UUID.randomUUID().toString().substring(0, 8);
+        String evalId = java.util.UUID.randomUUID().toString().substring(0, 8);
         Evaluation evaluation = new Evaluation(
             evalId,
             selected.getStudentId(),
@@ -258,7 +239,6 @@ public class EvaluatorPanel extends JPanel {
             commentsArea.getText()
         );
         
-        // Save evaluation
         boolean success = controller.saveEvaluation(evaluation);
         if (success) {
             JOptionPane.showMessageDialog(this, 

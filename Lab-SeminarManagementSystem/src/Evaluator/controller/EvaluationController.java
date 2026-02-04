@@ -22,7 +22,7 @@ public class EvaluationController {
         }
     }
     
-    // Get submissions assigned to an evaluator
+    // Get submissions assigned to an evaluator (OLD METHOD - consider renaming)
     public List<Submission> getAssignedSubmissions(String evaluatorId) {
         List<Submission> assignedSubmissions = new ArrayList<>();
         Map<String, String> assignments = loadAssignments();
@@ -34,6 +34,32 @@ public class EvaluationController {
                 if (parts.length == 7) {
                     String studentId = parts[1];
                     // Check if this evaluator is assigned to this student
+                    if (assignments.containsKey(studentId) && 
+                        assignments.get(studentId).equals(evaluatorId)) {
+                        Submission sub = new Submission(parts[0], parts[1], parts[2], 
+                                                      parts[3], parts[4], parts[5], parts[6]);
+                        assignedSubmissions.add(sub);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return assignedSubmissions;
+    }
+    
+    // Get submissions assigned specifically to this evaluator (NEW METHOD - use this one)
+    public List<Submission> getAssignedSubmissionsForEvaluator(String evaluatorId) {
+        List<Submission> assignedSubmissions = new ArrayList<>();
+        Map<String, String> assignments = loadAssignments();
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(SUBMISSION_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split("\\|");
+                if (parts.length == 7) {
+                    String studentId = parts[1];
+                    // Check if this SPECIFIC evaluator is assigned to this student
                     if (assignments.containsKey(studentId) && 
                         assignments.get(studentId).equals(evaluatorId)) {
                         Submission sub = new Submission(parts[0], parts[1], parts[2], 

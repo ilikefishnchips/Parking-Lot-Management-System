@@ -1,6 +1,8 @@
-package model;
+package src.Student.model;
 
-public class Student extends User { // Assuming User is the base class
+import src.common.model.User;
+
+public class Student extends User {
     private String studentId;
     private String name;
 
@@ -13,7 +15,6 @@ public class Student extends User { // Assuming User is the base class
     public String getStudentId() { return studentId; }
     public String getName() { return name; }
     
-    // toString for file saving
     @Override
     public String toString() {
         return getId() + "," + getUsername() + "," + getPassword() + "," + getName();

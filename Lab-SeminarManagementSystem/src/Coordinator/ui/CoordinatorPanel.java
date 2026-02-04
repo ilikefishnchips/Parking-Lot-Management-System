@@ -1,48 +1,69 @@
 package src.Coordinator.ui;
 
-
-import src.Coordinator.controller.SessionController;
-import src.Coordinator.model.Session;
+import Coordinator.controller.SessionController;
+import Coordinator.controller.ReportController;
+import Coordinator.model.Session;
+import common.model.Report;
+import common.model.Award;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 
 public class CoordinatorPanel extends JPanel {
     private SessionController sessionController;
+    private ReportController reportController;
     
-    // UI Components
+    private JTabbedPane tabbedPane;
+    
+    // Session Management Tab
     private JList<Session> sessionList;
     private DefaultListModel<Session> sessionListModel;
     private JTextField txtDate, txtTime, txtVenue, txtType, txtCapacity;
     private JTextArea txtStudents, txtEvaluators;
-    private JButton btnCreate, btnUpdate, btnDelete;
+    
+    // Reports Tab
     private JTextArea reportArea;
+    private JButton btnGenerateSchedule, btnGenerateEvaluation, btnExportCSV;
+    
+    // Awards Tab
+    private JTextArea awardArea;
+    private JButton btnComputeAwards;
     
     public CoordinatorPanel() {
         this.sessionController = new SessionController();
+        this.reportController = new ReportController();
+        
         initUI();
         loadSessions();
-        setupListeners();
     }
     
     private void initUI() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
-        // Main split pane
-        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        mainSplit.setDividerLocation(400);
+        tabbedPane = new JTabbedPane();
         
-        // Left panel: Session Management
-        JPanel leftPanel = new JPanel(new BorderLayout());
-        leftPanel.setBorder(BorderFactory.createTitledBorder("Session Management"));
+        // Tab 1: Session Management
+        tabbedPane.addTab("Session Management", createSessionPanel());
+        
+        // Tab 2: Reports
+        tabbedPane.addTab("Reports", createReportPanel());
+        
+        // Tab 3: Awards
+        tabbedPane.addTab("Awards", createAwardPanel());
+        
+        add(tabbedPane, BorderLayout.CENTER);
+    }
+    
+    private JPanel createSessionPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
         // Session List
         sessionListModel = new DefaultListModel<>();
         sessionList = new JList<>(sessionListModel);
         sessionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JScrollPane listScroll = new JScrollPane(sessionList);
-        leftPanel.add(listScroll, BorderLayout.CENTER);
+        panel.add(listScroll, BorderLayout.CENTER);
         
         // Session Form
         JPanel formPanel = new JPanel(new GridBagLayout());
@@ -87,29 +108,27 @@ public class CoordinatorPanel extends JPanel {
         txtCapacity = new JTextField(15);
         formPanel.add(txtCapacity, gbc);
         
-        // Students (comma separated IDs)
+        // Students
         gbc.gridx = 0; gbc.gridy = ++row;
-        formPanel.add(new JLabel("Student IDs:"), gbc);
+        formPanel.add(new JLabel("Student IDs (comma separated):"), gbc);
         gbc.gridx = 1;
         txtStudents = new JTextArea(3, 15);
-        txtStudents.setLineWrap(true);
         JScrollPane studentScroll = new JScrollPane(txtStudents);
         formPanel.add(studentScroll, gbc);
         
-        // Evaluators (comma separated IDs)
+        // Evaluators
         gbc.gridx = 0; gbc.gridy = ++row;
-        formPanel.add(new JLabel("Evaluator IDs:"), gbc);
+        formPanel.add(new JLabel("Evaluator IDs (comma separated):"), gbc);
         gbc.gridx = 1;
         txtEvaluators = new JTextArea(3, 15);
-        txtEvaluators.setLineWrap(true);
         JScrollPane evaluatorScroll = new JScrollPane(txtEvaluators);
         formPanel.add(evaluatorScroll, gbc);
         
         // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout());
-        btnCreate = new JButton("Create");
-        btnUpdate = new JButton("Update");
-        btnDelete = new JButton("Delete");
+        JButton btnCreate = new JButton("Create Session");
+        JButton btnUpdate = new JButton("Update Session");
+        JButton btnDelete = new JButton("Delete Session");
         
         buttonPanel.add(btnCreate);
         buttonPanel.add(btnUpdate);
@@ -119,36 +138,9 @@ public class CoordinatorPanel extends JPanel {
         gbc.gridwidth = 2;
         formPanel.add(buttonPanel, gbc);
         
-        leftPanel.add(formPanel, BorderLayout.SOUTH);
+        panel.add(formPanel, BorderLayout.SOUTH);
         
-        // Right panel: Reports
-        JPanel rightPanel = new JPanel(new BorderLayout());
-        rightPanel.setBorder(BorderFactory.createTitledBorder("Reports"));
-        
-        // Report display area
-        reportArea = new JTextArea(20, 40);
-        reportArea.setEditable(false);
-        reportArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        JScrollPane reportScroll = new JScrollPane(reportArea);
-        
-        rightPanel.add(reportScroll, BorderLayout.CENTER);
-        
-        mainSplit.setLeftComponent(leftPanel);
-        mainSplit.setRightComponent(rightPanel);
-        
-        add(mainSplit, BorderLayout.CENTER);
-    }
-    
-    private void loadSessions() {
-        sessionListModel.clear();
-        List<Session> sessions = sessionController.getAllSessions();
-        for (Session session : sessions) {
-            sessionListModel.addElement(session);
-        }
-    }
-    
-    private void setupListeners() {
-        // Session selection
+        // Add listeners
         sessionList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && sessionList.getSelectedValue() != null) {
                 Session selected = sessionList.getSelectedValue();
@@ -162,14 +154,74 @@ public class CoordinatorPanel extends JPanel {
             }
         });
         
-        // Create session
         btnCreate.addActionListener(e -> createSession());
-        
-        // Update session
         btnUpdate.addActionListener(e -> updateSession());
-        
-        // Delete session
         btnDelete.addActionListener(e -> deleteSession());
+        
+        return panel;
+    }
+    
+    private JPanel createReportPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Report buttons
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 3, 10, 10));
+        btnGenerateSchedule = new JButton("Generate Schedule Report");
+        btnGenerateEvaluation = new JButton("Generate Evaluation Report");
+        btnExportCSV = new JButton("Export to CSV");
+        
+        buttonPanel.add(btnGenerateSchedule);
+        buttonPanel.add(btnGenerateEvaluation);
+        buttonPanel.add(btnExportCSV);
+        
+        // Report display area
+        reportArea = new JTextArea(20, 60);
+        reportArea.setEditable(false);
+        reportArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        JScrollPane reportScroll = new JScrollPane(reportArea);
+        
+        panel.add(buttonPanel, BorderLayout.NORTH);
+        panel.add(reportScroll, BorderLayout.CENTER);
+        
+        // Add listeners
+        btnGenerateSchedule.addActionListener(e -> generateScheduleReport());
+        btnGenerateEvaluation.addActionListener(e -> generateEvaluationReport());
+        btnExportCSV.addActionListener(e -> exportReportToCSV());
+        
+        return panel;
+    }
+    
+    private JPanel createAwardPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Award button
+        JPanel buttonPanel = new JPanel();
+        btnComputeAwards = new JButton("Compute Awards");
+        buttonPanel.add(btnComputeAwards);
+        
+        // Award display area
+        awardArea = new JTextArea(20, 60);
+        awardArea.setEditable(false);
+        awardArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        JScrollPane awardScroll = new JScrollPane(awardArea);
+        
+        panel.add(buttonPanel, BorderLayout.NORTH);
+        panel.add(awardScroll, BorderLayout.CENTER);
+        
+        // Add listener
+        btnComputeAwards.addActionListener(e -> computeAwards());
+        
+        return panel;
+    }
+    
+    private void loadSessions() {
+        sessionListModel.clear();
+        List<Session> sessions = sessionController.getAllSessions();
+        for (Session session : sessions) {
+            sessionListModel.addElement(session);
+        }
     }
     
     private void createSession() {
@@ -209,7 +261,7 @@ public class CoordinatorPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Error creating session.");
             }
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Please enter valid numbers for capacity.");
+            JOptionPane.showMessageDialog(this, "Please enter valid capacity number.");
         }
     }
     
@@ -277,6 +329,57 @@ public class CoordinatorPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Error deleting session.");
             }
         }
+    }
+    
+    private void generateScheduleReport() {
+        Report report = reportController.generateScheduleReport();
+        reportArea.setText(report.getFormattedContent());
+        JOptionPane.showMessageDialog(this, "Schedule report generated!");
+    }
+    
+    private void generateEvaluationReport() {
+        Report report = reportController.generateEvaluationReport();
+        reportArea.setText(report.getFormattedContent());
+        JOptionPane.showMessageDialog(this, "Evaluation report generated!");
+    }
+    
+    private void exportReportToCSV() {
+        String currentReport = reportArea.getText();
+        if (currentReport.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Generate a report first.");
+            return;
+        }
+        
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setSelectedFile(new File("report.csv"));
+        int option = fileChooser.showSaveDialog(this);
+        
+        if (option == JFileChooser.APPROVE_OPTION) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileChooser.getSelectedFile()))) {
+                writer.write(currentReport.replace("\t", ","));
+                JOptionPane.showMessageDialog(this, "Report exported successfully!");
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Error exporting report: " + e.getMessage());
+            }
+        }
+    }
+    
+    private void computeAwards() {
+        List<Award> awards = reportController.computeAwards();
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== AWARD WINNERS ===\n\n");
+        
+        for (Award award : awards) {
+            sb.append("Award: ").append(award.getAwardType()).append("\n");
+            sb.append("Winner: ").append(award.getStudentName()).append("\n");
+            sb.append("Student ID: ").append(award.getStudentId()).append("\n");
+            sb.append("Submission: ").append(award.getSubmissionTitle()).append("\n");
+            sb.append("Score: ").append(String.format("%.2f", award.getScore())).append("\n");
+            sb.append("------------------------\n");
+        }
+        
+        awardArea.setText(sb.toString());
+        JOptionPane.showMessageDialog(this, "Awards computed successfully!");
     }
     
     private void clearForm() {

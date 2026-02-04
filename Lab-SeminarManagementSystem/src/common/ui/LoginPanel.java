@@ -1,9 +1,8 @@
 package src.common.ui;
 
 import src.Student.model.Student;
-import src.Evaluator.model.Evaluator;
-import src.Coordinator.model.Coordinator;
 import src.Student.UI.StudentPanel;
+import src.Evaluator.model.Evaluator;
 import src.Evaluator.ui.EvaluatorPanel;
 import src.Coordinator.ui.CoordinatorPanel;
 import javax.swing.*;
@@ -142,8 +141,6 @@ public class LoginPanel extends JPanel {
                 break;
                 
             case "Coordinator":
-                Coordinator coordinator = new Coordinator("COORD001", username, "admin123",
-                                                         "Admin", "admin@fci.edu");
                 parentFrame.add(new CoordinatorPanel());
                 parentFrame.setTitle("Coordinator Dashboard");
                 break;
@@ -153,4 +150,3 @@ public class LoginPanel extends JPanel {
         parentFrame.repaint();
     }
 }
-

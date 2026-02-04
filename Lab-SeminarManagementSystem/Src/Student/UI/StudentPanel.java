@@ -1,7 +1,7 @@
-package src.Student.UI;
+package UI;
 
-import src.Student.controller.StudentController;
-import src.Student.model.Student;
+import controller.StudentController;
+import model.Student;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;

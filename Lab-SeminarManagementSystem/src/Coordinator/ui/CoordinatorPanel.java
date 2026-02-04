@@ -1,27 +1,42 @@
 package src.Coordinator.ui;
 
+import src.Coordinator.controller.BoardController;
+import src.Coordinator.controller.EnhancedAnalyticsController;
 import src.Coordinator.controller.SessionController;
 import src.Coordinator.controller.ReportController;
 import src.Coordinator.model.Session;
-import src.common.model.Report;
 import src.common.model.Award;
+import src.common.model.Board;
+import src.common.model.Report;
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.List;
 
 public class CoordinatorPanel extends JPanel {
-    private SessionController sessionController;
-    private ReportController reportController;
+    private final SessionController sessionController;
+    private final ReportController reportController;
+    private final BoardController boardController;
+    private final EnhancedAnalyticsController analyticsController;
     
+    // Board Management UI Components
+    private JTable boardTable;
+    private DefaultTableModel boardTableModel;
+    private JTextField txtBoardId, txtBoardLocation, txtBoardWidth, txtBoardHeight;
+    private JTextArea txtBoardRequirements;
+    private JComboBox<String> cbBoardSession;
+    
+    // Analytics UI Components
+    private JTextArea analyticsArea;
+    private JButton btnGenerateStats, btnGenerateSummary, btnGenerateCharts;
     private JTabbedPane tabbedPane;
     
     // User lists
-    private List<String> studentList;
-    private List<String> evaluatorList;
+    private java.util.List<String> studentList;
+    private java.util.List<String> evaluatorList;
     
     // Session Management Tab
     private JList<Session> sessionList;
@@ -38,13 +53,11 @@ public class CoordinatorPanel extends JPanel {
     private JTextArea awardArea;
     private JButton btnComputeAwards;
     
-    // Date formatter for validation
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    private SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
-    
     public CoordinatorPanel() {
         this.sessionController = new SessionController();
         this.reportController = new ReportController();
+        this.boardController = new BoardController();
+        this.analyticsController = new EnhancedAnalyticsController();
         initializeUserLists();
         
         initUI();
@@ -64,15 +77,358 @@ public class CoordinatorPanel extends JPanel {
         // Tab 1: Session Management
         tabbedPane.addTab("Session Management", createSessionPanel());
         
-        // Tab 2: Reports
+        // Tab 2: Poster Board Management
+        tabbedPane.addTab("Poster Boards", createBoardPanel());
+        
+        // Tab 3: Reports
         tabbedPane.addTab("Reports", createReportPanel());
         
-        // Tab 3: Awards
+        // Tab 4: Analytics
+        tabbedPane.addTab("Analytics", createAnalyticsPanel());
+        
+        // Tab 5: Awards
         tabbedPane.addTab("Awards", createAwardPanel());
         
         add(tabbedPane, BorderLayout.CENTER);
     }
     
+    private JPanel createBoardPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Top: Add Board Form
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        int row = 0;
+        
+        // Board ID
+        gbc.gridx = 0; gbc.gridy = row;
+        formPanel.add(new JLabel("Board ID:"), gbc);
+        gbc.gridx = 1;
+        txtBoardId = new JTextField(15);
+        formPanel.add(txtBoardId, gbc);
+        
+        // Location
+        gbc.gridx = 0; gbc.gridy = ++row;
+        formPanel.add(new JLabel("Location:"), gbc);
+        gbc.gridx = 1;
+        txtBoardLocation = new JTextField(15);
+        formPanel.add(txtBoardLocation, gbc);
+        
+        // Session Selection
+        gbc.gridx = 0; gbc.gridy = ++row;
+        formPanel.add(new JLabel("Session:"), gbc);
+        gbc.gridx = 1;
+        cbBoardSession = new JComboBox<>();
+        loadSessionsIntoCombo();
+        formPanel.add(cbBoardSession, gbc);
+        
+        // Dimensions
+        gbc.gridx = 0; gbc.gridy = ++row;
+        formPanel.add(new JLabel("Width (cm):"), gbc);
+        gbc.gridx = 1;
+        txtBoardWidth = new JTextField(15);
+        formPanel.add(txtBoardWidth, gbc);
+        
+        gbc.gridx = 0; gbc.gridy = ++row;
+        formPanel.add(new JLabel("Height (cm):"), gbc);
+        gbc.gridx = 1;
+        txtBoardHeight = new JTextField(15);
+        formPanel.add(txtBoardHeight, gbc);
+        
+        // Requirements
+        gbc.gridx = 0; gbc.gridy = ++row;
+        formPanel.add(new JLabel("Requirements:"), gbc);
+        gbc.gridx = 1;
+        txtBoardRequirements = new JTextArea(3, 15);
+        JScrollPane reqScroll = new JScrollPane(txtBoardRequirements);
+        formPanel.add(reqScroll, gbc);
+        
+        // Buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JButton btnAddBoard = new JButton("Add Board");
+        JButton btnGenerateLayout = new JButton("Generate Layout Report");
+        
+        btnAddBoard.addActionListener(e -> addNewBoard());
+        btnGenerateLayout.addActionListener(e -> generateBoardLayoutReport());
+        
+        buttonPanel.add(btnAddBoard);
+        buttonPanel.add(btnGenerateLayout);
+        
+        gbc.gridx = 0; gbc.gridy = ++row;
+        gbc.gridwidth = 2;
+        formPanel.add(buttonPanel, gbc);
+        
+        panel.add(formPanel, BorderLayout.NORTH);
+        
+        // Bottom: Board Table
+        String[] columnNames = {"Board ID", "Location", "Status", "Poster ID", "Size", "Requirements"};
+        boardTableModel = new DefaultTableModel(columnNames, 0);
+        boardTable = new JTable(boardTableModel);
+        JScrollPane tableScroll = new JScrollPane(boardTable);
+        panel.add(tableScroll, BorderLayout.CENTER);
+        
+        // Load existing boards
+        loadBoardsIntoTable();
+        
+        return panel;
+    }
+    
+    private JPanel createAnalyticsPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Top: Buttons
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 4, 10, 10));
+        btnGenerateStats = new JButton("Generate Statistics");
+        btnGenerateSummary = new JButton("Generate Executive Summary");
+        btnGenerateCharts = new JButton("Generate Charts");
+        JButton btnExportAnalytics = new JButton("Export Analytics");
+        
+        buttonPanel.add(btnGenerateStats);
+        buttonPanel.add(btnGenerateSummary);
+        buttonPanel.add(btnGenerateCharts);
+        buttonPanel.add(btnExportAnalytics);
+        
+        // Analytics display area
+        analyticsArea = new JTextArea(20, 60);
+        analyticsArea.setEditable(false);
+        analyticsArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        JScrollPane analyticsScroll = new JScrollPane(analyticsArea);
+        
+        // Add listeners
+        btnGenerateStats.addActionListener(e -> generateComprehensiveStats());
+        btnGenerateSummary.addActionListener(e -> generateExecutiveSummary());
+        btnGenerateCharts.addActionListener(e -> generateChartVisualization());
+        btnExportAnalytics.addActionListener(e -> exportAnalyticsData());
+        
+        panel.add(buttonPanel, BorderLayout.NORTH);
+        panel.add(analyticsScroll, BorderLayout.CENTER);
+        
+        return panel;
+    }
+    
+    // ============ ANALYTICS METHODS ============
+    private void generateComprehensiveStats() {
+        Map<String, Object> stats = analyticsController.getComprehensiveStatistics();
+        
+        if (stats.containsKey("message")) {
+            analyticsArea.setText((String) stats.get("message"));
+            return;
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== COMPREHENSIVE ANALYTICS ===\n");
+        sb.append("Generated: ").append(new Date()).append("\n\n");
+        
+        // Basic statistics
+        sb.append("BASIC STATISTICS:\n");
+        sb.append("Total Submissions: ").append(stats.get("totalSubmissions")).append("\n");
+        sb.append("Oral Presentations: ").append(stats.get("oralSubmissions")).append("\n");
+        sb.append("Poster Presentations: ").append(stats.get("posterSubmissions")).append("\n");
+        sb.append("Total Evaluations: ").append(stats.get("totalEvaluations")).append("\n\n");
+        
+        // Score analysis
+        sb.append("SCORE ANALYSIS:\n");
+        sb.append("Overall Average: ").append(stats.get("avgOverall")).append("/5.0\n");
+        sb.append("Standard Deviation: ").append(stats.get("stdDevOverall")).append("\n");
+        sb.append("Median: ").append(stats.get("medianScore")).append("\n");
+        sb.append("Range: ").append(stats.get("scoreRange")).append("\n\n");
+        
+        // Criteria breakdown
+        sb.append("CRITERIA AVERAGES:\n");
+        sb.append("Problem Clarity: ").append(stats.get("avgProblem")).append("/5.0\n");
+        sb.append("Methodology: ").append(stats.get("avgMethod")).append("/5.0\n");
+        sb.append("Results: ").append(stats.get("avgResults")).append("/5.0\n");
+        sb.append("Presentation: ").append(stats.get("avgPresentation")).append("/5.0\n\n");
+        
+        // Evaluator analysis
+        Map<?, ?> evaluatorAnalysis = (Map<?, ?>) stats.get("evaluatorAnalysis");
+        if (evaluatorAnalysis != null && !evaluatorAnalysis.isEmpty()) {
+            sb.append("EVALUATOR CONSISTENCY ANALYSIS:\n");
+            for (Map.Entry<?, ?> entry : evaluatorAnalysis.entrySet()) {
+                Map<?, ?> evalStats = (Map<?, ?>) entry.getValue();
+                sb.append(String.format("Evaluator %s: Avg=%.2f, StdDev=%.2f, Consistency=%s, Evaluations=%d\n",
+                    entry.getKey(),
+                    evalStats.get("average"),
+                    evalStats.get("stdDev"),
+                    evalStats.get("consistency"),
+                    evalStats.get("numEvaluations")));
+            }
+            sb.append("\n");
+        }
+        
+        // Supervisor analysis
+        Map<?, ?> supervisorAnalysis = (Map<?, ?>) stats.get("supervisorAnalysis");
+        if (supervisorAnalysis != null && !supervisorAnalysis.isEmpty()) {
+            sb.append("SUPERVISOR PERFORMANCE:\n");
+            for (Map.Entry<?, ?> entry : supervisorAnalysis.entrySet()) {
+                Map<?, ?> supStats = (Map<?, ?>) entry.getValue();
+                sb.append(String.format("%s: %d students, Avg Score=%.2f, Evaluated=%d/%d\n",
+                    entry.getKey(),
+                    supStats.get("numStudents"),
+                    supStats.get("avgScore"),
+                    supStats.get("totalEvaluated"),
+                    supStats.get("numStudents")));
+            }
+        }
+        
+        analyticsArea.setText(sb.toString());
+    }
+    
+    private void generateExecutiveSummary() {
+        String summary = analyticsController.generateExecutiveSummary();
+        analyticsArea.setText(summary);
+    }
+    
+    private void generateChartVisualization() {
+        Map<String, Object> chartData = analyticsController.getChartData();
+        
+        if (chartData.isEmpty()) {
+            analyticsArea.setText("No data available for chart generation.");
+            return;
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== CHART DATA (Visualization Ready) ===\n\n");
+        
+        // Score Distribution
+        Map<?, ?> scoreDist = (Map<?, ?>) chartData.get("scoreDistribution");
+        if (scoreDist != null) {
+            sb.append("SCORE DISTRIBUTION (Histogram Data):\n");
+            sb.append("Score | Count\n");
+            sb.append("-------------\n");
+            for (Map.Entry<?, ?> entry : scoreDist.entrySet()) {
+                sb.append(String.format("%5s | %3d\n", entry.getKey(), entry.getValue()));
+            }
+            sb.append("\n");
+        }
+        
+        // Criteria Averages
+        Map<?, ?> criteriaAvgs = (Map<?, ?>) chartData.get("criteriaAverages");
+        if (criteriaAvgs != null) {
+            sb.append("CRITERIA AVERAGES (Bar Chart Data):\n");
+            sb.append("Criteria          | Average Score\n");
+            sb.append("----------------------------------\n");
+            for (Map.Entry<?, ?> entry : criteriaAvgs.entrySet()) {
+                sb.append(String.format("%-18s | %.2f/5.0\n", entry.getKey(), entry.getValue()));
+            }
+        }
+        
+        analyticsArea.setText(sb.toString());
+    }
+    
+    private void exportAnalyticsData() {
+        String currentAnalytics = analyticsArea.getText();
+        if (currentAnalytics.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Generate analytics first.");
+            return;
+        }
+        
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setSelectedFile(new File("analytics_report.txt"));
+        int option = fileChooser.showSaveDialog(this);
+        
+        if (option == JFileChooser.APPROVE_OPTION) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileChooser.getSelectedFile()))) {
+                writer.write(currentAnalytics);
+                JOptionPane.showMessageDialog(this, "Analytics exported successfully!");
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Error exporting analytics: " + e.getMessage());
+            }
+        }
+    }
+    
+    // ============ BOARD MANAGEMENT METHODS ============
+    private void loadSessionsIntoCombo() {
+        cbBoardSession.removeAllItems();
+        java.util.List<Session> sessions = sessionController.getAllSessions();
+        for (Session session : sessions) {
+            cbBoardSession.addItem(session.getSessionId() + ": " + session.getDate());
+        }
+    }
+    
+    private void loadBoardsIntoTable() {
+        boardTableModel.setRowCount(0);
+        java.util.List<Board> boards = boardController.getAllBoards();
+        
+        for (Board board : boards) {
+            String size = board.getWidth() + "x" + board.getHeight() + "cm";
+            String posterId = board.getPosterId() != null ? board.getPosterId() : "N/A";
+            
+            boardTableModel.addRow(new Object[]{
+                board.getBoardId(),
+                board.getLocation(),
+                board.getStatus(),
+                posterId,
+                size,
+                board.getSpecialRequirements()
+            });
+        }
+    }
+    
+    private void addNewBoard() {
+        try {
+            String boardId = txtBoardId.getText().trim();
+            String location = txtBoardLocation.getText().trim();
+            String sessionStr = (String) cbBoardSession.getSelectedItem();
+            String sessionId = sessionStr != null ? sessionStr.split(":")[0].trim() : "";
+            int width = Integer.parseInt(txtBoardWidth.getText().trim());
+            int height = Integer.parseInt(txtBoardHeight.getText().trim());
+            String requirements = txtBoardRequirements.getText().trim();
+            
+            if (boardId.isEmpty() || location.isEmpty() || sessionId.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill all required fields.");
+                return;
+            }
+            
+            Board board = new Board(boardId, location, sessionId, width, height, requirements);
+            
+            if (boardController.createBoard(board)) {
+                JOptionPane.showMessageDialog(this, "Board added successfully!");
+                loadBoardsIntoTable();
+                clearBoardForm();
+            } else {
+                JOptionPane.showMessageDialog(this, "Error adding board.");
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Please enter valid dimensions.");
+        }
+    }
+    
+    private void generateBoardLayoutReport() {
+        String sessionStr = (String) cbBoardSession.getSelectedItem();
+        if (sessionStr == null || sessionStr.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please select a session first.");
+            return;
+        }
+        
+        String sessionId = sessionStr.split(":")[0].trim();
+        String layoutReport = boardController.generateBoardLayoutReport(sessionId);
+        
+        // Show in a dialog
+        JTextArea textArea = new JTextArea(20, 60);
+        textArea.setText(layoutReport);
+        textArea.setEditable(false);
+        textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        JOptionPane.showMessageDialog(this, scrollPane, 
+            "Poster Board Layout - " + sessionId, JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    private void clearBoardForm() {
+        txtBoardId.setText("");
+        txtBoardLocation.setText("");
+        txtBoardWidth.setText("");
+        txtBoardHeight.setText("");
+        txtBoardRequirements.setText("");
+    }
+    
+    // ============ SESSION MANAGEMENT METHODS ============
     private JPanel createSessionPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -267,7 +623,7 @@ public class CoordinatorPanel extends JPanel {
     
     private void loadSessions() {
         sessionListModel.clear();
-        List<Session> sessions = sessionController.getAllSessions();
+        java.util.List<Session> sessions = sessionController.getAllSessions();
         for (Session session : sessions) {
             sessionListModel.addElement(session);
         }
@@ -288,7 +644,7 @@ public class CoordinatorPanel extends JPanel {
         }
         
         // Select students
-        List<String> selectedStudents = new ArrayList<>();
+        java.util.List<String> selectedStudents = new ArrayList<>();
         for (String studentId : session.getStudentIds()) {
             for (String studentItem : studentList) {
                 if (studentItem.startsWith(studentId)) {
@@ -300,7 +656,7 @@ public class CoordinatorPanel extends JPanel {
         studentSelector.setSelectedIndices(getIndices(selectedStudents, studentList));
         
         // Select evaluators
-        List<String> selectedEvaluators = new ArrayList<>();
+        java.util.List<String> selectedEvaluators = new ArrayList<>();
         for (String evaluatorId : session.getEvaluatorIds()) {
             for (String evaluatorItem : evaluatorList) {
                 if (evaluatorItem.startsWith(evaluatorId)) {
@@ -312,8 +668,8 @@ public class CoordinatorPanel extends JPanel {
         evaluatorSelector.setSelectedIndices(getIndices(selectedEvaluators, evaluatorList));
     }
     
-    private int[] getIndices(List<String> selectedItems, List<String> allItems) {
-        List<Integer> indices = new ArrayList<>();
+    private int[] getIndices(java.util.List<String> selectedItems, java.util.List<String> allItems) {
+        java.util.List<Integer> indices = new ArrayList<>();
         for (String selected : selectedItems) {
             int index = allItems.indexOf(selected);
             if (index >= 0) {
@@ -399,6 +755,8 @@ public class CoordinatorPanel extends JPanel {
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Please enter valid capacity number.");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
         }
     }
     
@@ -501,7 +859,7 @@ public class CoordinatorPanel extends JPanel {
     }
     
     private void computeAwards() {
-        List<Award> awards = reportController.computeAwards();
+        java.util.List<Award> awards = reportController.computeAwards();
         StringBuilder sb = new StringBuilder();
         sb.append("=== AWARD WINNERS ===\n\n");
         

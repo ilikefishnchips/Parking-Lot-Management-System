@@ -5,7 +5,7 @@ echo Cleaning bin directory...
 rmdir /s /q bin 2>nul
 mkdir bin 2>nul
 
-echo Compiling in correct order...
+echo Compiling with new features...
 echo.
 
 echo Step 1: Compile common model...
@@ -40,7 +40,7 @@ echo Step 8: Compile Coordinator model...
 javac -d bin -cp bin src\Coordinator\model\*.java
 if %errorlevel% neq 0 goto error
 
-echo Step 9: Compile Coordinator controller...
+echo Step 9: Compile Coordinator controllers...
 javac -d bin -cp bin src\Coordinator\controller\*.java
 if %errorlevel% neq 0 goto error
 
@@ -48,7 +48,7 @@ echo Step 10: Compile Coordinator UI...
 javac -d bin -cp bin src\Coordinator\ui\*.java
 if %errorlevel% neq 0 goto error
 
-echo Step 11: Compile common UI (LoginPanel)...
+echo Step 11: Compile common UI...
 javac -d bin -cp bin src\common\ui\*.java
 if %errorlevel% neq 0 goto error
 
@@ -58,10 +58,10 @@ if %errorlevel% neq 0 goto error
 
 echo.
 echo ====================================
-echo COMPILATION SUCCESSFUL!
+echo COMPILATION SUCCESSFUL WITH NEW FEATURES!
 echo ====================================
 echo.
-echo Starting Seminar Management System...
+echo Starting Enhanced Seminar Management System...
 echo.
 java -cp bin MainApplication
 goto end

@@ -21,6 +21,10 @@ public class Submission {
     }
 
     // Getters
+    // In the Submission class, add this method with the other getters:
+    public String getPresentationFilePath() {
+        return presentationFilePath;
+    }
     public String getStudentId() { return studentId; }
     public String getTitle() { return title; }
     public String getPresentationType() { return presentationType; }

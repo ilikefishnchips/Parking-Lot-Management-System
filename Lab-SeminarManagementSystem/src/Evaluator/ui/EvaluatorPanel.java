@@ -6,6 +6,8 @@ import src.common.model.Submission;
 import src.common.model.Evaluation;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.Desktop;  // Add this import
+import java.io.File;      // Add this import
 import java.util.List;
 import java.util.UUID;
 
@@ -14,12 +16,13 @@ public class EvaluatorPanel extends JPanel {
     private EvaluationController controller;
     private List<Submission> assignedSubmissions;
     
-    // ui Components
+    // UI Components
     private JComboBox<Submission> submissionCombo;
     private JSlider problemSlider, methodSlider, resultsSlider, presentationSlider;
     private JLabel problemLabel, methodLabel, resultsLabel, presentationLabel, totalLabel;
     private JTextArea commentsArea;
     private JButton btnSubmit;
+    private JButton btnOpenFile;  // Added button
     
     public EvaluatorPanel(Evaluator evaluator) {
         this.currentEvaluator = evaluator;
@@ -65,8 +68,17 @@ public class EvaluatorPanel extends JPanel {
         });
         mainPanel.add(submissionCombo, gbc);
         
-        // Problem Clarity
+        // ============ ADDED: OPEN FILE BUTTON ============
+        gbc.gridx = 2;
+        btnOpenFile = new JButton("📂 Open File");
+        btnOpenFile.setToolTipText("Open the full presentation file");
+        mainPanel.add(btnOpenFile, gbc);
+        // ============ END OF ADDED CODE ============
+        
+        // Reset grid position for next row
         gbc.gridx = 0; gbc.gridy = 1;
+        
+        // Problem Clarity
         mainPanel.add(new JLabel("Problem Clarity:"), gbc);
         gbc.gridx = 1;
         JPanel problemPanel = new JPanel(new BorderLayout());
@@ -165,6 +177,48 @@ public class EvaluatorPanel extends JPanel {
             presentationLabel.setText(String.valueOf(presentationSlider.getValue()));
             updateTotal();
         });
+        
+        // ============ ADDED: FILE OPENING LISTENER ============
+        btnOpenFile.addActionListener(e -> {
+            Submission selected = (Submission) submissionCombo.getSelectedItem();
+            if (selected == null) {
+                JOptionPane.showMessageDialog(this, "Please select a submission first.");
+                return;
+            }
+            
+            try {
+                // Get file path - need to add getPresentationFilePath() to Submission class
+                String filePath = selected.getPresentationFilePath();
+                if (filePath == null || filePath.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, 
+                        "No file path available for this submission.", 
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                
+                File file = new File(filePath);
+                if (file.exists()) {
+                    // Ask for confirmation
+                    int choice = JOptionPane.showConfirmDialog(this,
+                        "Open file:\n" + file.getName() + "\n\nLocated at:\n" + file.getParent(),
+                        "Open Presentation File",
+                        JOptionPane.YES_NO_OPTION);
+                    
+                    if (choice == JOptionPane.YES_OPTION) {
+                        Desktop.getDesktop().open(file);
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(this, 
+                        "File not found:\n" + file.getPath(), 
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, 
+                    "Cannot open file: " + ex.getMessage(), 
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        // ============ END OF ADDED CODE ============
         
         // Submit evaluation
         btnSubmit.addActionListener(e -> submitEvaluation());

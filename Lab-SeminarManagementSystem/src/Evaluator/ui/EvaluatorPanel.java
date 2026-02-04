@@ -14,7 +14,7 @@ public class EvaluatorPanel extends JPanel {
     private EvaluationController controller;
     private List<Submission> assignedSubmissions;
     
-    // UI Components
+    // ui Components
     private JComboBox<Submission> submissionCombo;
     private JSlider problemSlider, methodSlider, resultsSlider, presentationSlider;
     private JLabel problemLabel, methodLabel, resultsLabel, presentationLabel, totalLabel;

@@ -1,4 +1,4 @@
-package src.Student.UI;
+package src.Student.ui;
 
 import src.Student.controller.StudentController;
 import src.Student.model.Student;
@@ -11,7 +11,7 @@ public class StudentPanel extends JPanel {
     private Student currentStudent;
     private StudentController controller;
     
-    // UI Components
+    // ui Components
     private JTextField txtTitle, txtSupervisor, txtFilePath;
     private JTextArea txtAbstract;
     private JComboBox<String> cbType;

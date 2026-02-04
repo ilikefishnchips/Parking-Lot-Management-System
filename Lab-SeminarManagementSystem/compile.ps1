@@ -11,10 +11,10 @@ if ($LASTEXITCODE -ne 0) {
     exit
 }
 
-# 2. Compile common UI (depends on common model)
+# 2. Compile common ui (depends on common model)
 javac -d bin -cp bin src/common/ui/*.java
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Error compiling common UI" -ForegroundColor Red
+    Write-Host "Error compiling common ui" -ForegroundColor Red
     exit
 }
 
@@ -32,10 +32,10 @@ if ($LASTEXITCODE -ne 0) {
     exit
 }
 
-# 5. Compile Student UI (depends on Student model, controller, and common UI)
-javac -d bin -cp bin src/Student/UI/*.java
+# 5. Compile Student ui (depends on Student model, controller, and common ui)
+javac -d bin -cp bin src/Student/ui/*.java
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Error compiling Student UI" -ForegroundColor Red
+    Write-Host "Error compiling Student ui" -ForegroundColor Red
     exit
 }
 
@@ -53,10 +53,10 @@ if ($LASTEXITCODE -ne 0) {
     exit
 }
 
-# 8. Compile Evaluator UI (depends on Evaluator model, controller, and common UI)
+# 8. Compile Evaluator ui (depends on Evaluator model, controller, and common ui)
 javac -d bin -cp bin src/Evaluator/ui/*.java
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Error compiling Evaluator UI" -ForegroundColor Red
+    Write-Host "Error compiling Evaluator ui" -ForegroundColor Red
     exit
 }
 
@@ -74,10 +74,10 @@ if ($LASTEXITCODE -ne 0) {
     exit
 }
 
-# 11. Compile Coordinator UI (depends on Coordinator model, controller, and common UI)
+# 11. Compile Coordinator ui (depends on Coordinator model, controller, and common ui)
 javac -d bin -cp bin src/Coordinator/ui/*.java
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Error compiling Coordinator UI" -ForegroundColor Red
+    Write-Host "Error compiling Coordinator ui" -ForegroundColor Red
     exit
 }
 

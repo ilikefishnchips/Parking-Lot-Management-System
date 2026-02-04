@@ -1,12 +1,15 @@
 package src.Coordinator.ui;
 
-import Coordinator.controller.SessionController;
-import Coordinator.controller.ReportController;
-import Coordinator.model.Session;
-import common.model.Report;
-import common.model.Award;
+import src.Coordinator.controller.SessionController;
+import src.Coordinator.controller.ReportController;
+import src.Coordinator.model.Session;
+import src.common.model.Report;
+import src.common.model.Award;
+import src.common.model.Submission;
+import src.common.model.Evaluation;
 import javax.swing.*;
 import java.awt.*;
+import java.io.*;
 import java.util.List;
 
 public class CoordinatorPanel extends JPanel {

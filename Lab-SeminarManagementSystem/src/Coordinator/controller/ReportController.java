@@ -4,10 +4,12 @@ import src.common.model.Report;
 import src.common.model.Award;
 import src.common.model.Submission;
 import src.common.model.Evaluation;
+import src.Evaluator.controller.EvaluationController;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.UUID;
+
+import javax.swing.JOptionPane;
 
 public class ReportController {
     private final String SUBMISSION_FILE = "submissions.txt";
@@ -22,7 +24,13 @@ public class ReportController {
         String date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
         Report report = new Report(reportId, "Seminar Schedule", date);
         
-        try (BufferedReader reader = new BufferedReader(new FileReader(SESSION_FILE))) {
+        File sessionFile = new File(SESSION_FILE);
+        if (!sessionFile.exists()) {
+            report.addContentLine("No sessions found.");
+            return report;
+        }
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(sessionFile))) {
             String line;
             report.addContentLine("SEMINAR SCHEDULE");
             report.addContentLine("================\n");
@@ -97,12 +105,17 @@ public class ReportController {
         Map<String, Submission> submissions = loadSubmissions();
         Map<String, List<Evaluation>> evaluations = loadEvaluations();
         
+        if (submissions.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No submissions found to compute awards.");
+            return awards;
+        }
+        
         // Separate oral and poster presentations
         List<Submission> oralSubmissions = new ArrayList<>();
         List<Submission> posterSubmissions = new ArrayList<>();
         
         for (Submission sub : submissions.values()) {
-            if (sub.getPresentationType().contains("Oral")) {
+            if (sub.getPresentationType().toLowerCase().contains("oral")) {
                 oralSubmissions.add(sub);
             } else {
                 posterSubmissions.add(sub);

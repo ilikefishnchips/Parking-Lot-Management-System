@@ -1,7 +1,7 @@
 package src.common.ui;
 
 import src.Student.model.Student;
-import src.Student.UI.StudentPanel;
+import src.Student.ui.StudentPanel;
 import src.Evaluator.model.Evaluator;
 import src.Evaluator.ui.EvaluatorPanel;
 import src.Coordinator.ui.CoordinatorPanel;

@@ -9,6 +9,7 @@ public class EvaluationController {
     private final String EVALUATION_FILE = "evaluations.txt";
     private final String SUBMISSION_FILE = "submissions.txt";
     private final String ASSIGNMENT_FILE = "assignments.txt";
+    private final String SESSION_FILE = "sessions.txt";
     
     // Save evaluation
     public boolean saveEvaluation(Evaluation evaluation) {
@@ -22,103 +23,137 @@ public class EvaluationController {
         }
     }
     
-    // Get submissions assigned to an evaluator (OLD METHOD - consider renaming)
-    public List<Submission> getAssignedSubmissions(String evaluatorId) {
+    // Get submissions assigned to an evaluator (FIXED METHOD)
+    public List<Submission> getAssignedSubmissionsForEvaluator(String evaluatorId) {
         List<Submission> assignedSubmissions = new ArrayList<>();
-        Map<String, String> assignments = loadAssignments();
         
-        try (BufferedReader reader = new BufferedReader(new FileReader(SUBMISSION_FILE))) {
+        // Step 1: Get students assigned to this evaluator from assignments.txt
+        List<String> assignedStudentIds = getStudentsAssignedToEvaluator(evaluatorId);
+        
+        if (assignedStudentIds.isEmpty()) {
+            System.out.println("No students assigned to evaluator: " + evaluatorId);
+            return assignedSubmissions;
+        }
+        
+        System.out.println("Evaluator " + evaluatorId + " assigned to students: " + assignedStudentIds);
+        
+        // Step 2: Load all submissions
+        File submissionFile = new File(SUBMISSION_FILE);
+        if (!submissionFile.exists()) {
+            System.out.println("No submission file found.");
+            return assignedSubmissions;
+        }
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(submissionFile))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split("\\|");
-                if (parts.length == 7) {
-                    String studentId = parts[1];
-                    // Check if this evaluator is assigned to this student
-                    if (assignments.containsKey(studentId) && 
-                        assignments.get(studentId).equals(evaluatorId)) {
-                        Submission sub = new Submission(parts[0], parts[1], parts[2], 
-                                                      parts[3], parts[4], parts[5], parts[6]);
+                if (parts.length >= 7) { // Minimum 7 parts for a submission
+                    String studentId = parts[1]; // parts[1] is student ID
+                    
+                    // Check if this student is assigned to our evaluator
+                    if (assignedStudentIds.contains(studentId)) {
+                        Submission sub = new Submission(
+                            parts[0], // submissionId
+                            parts[1], // studentId
+                            parts[2], // title
+                            parts[3], // abstract
+                            parts[4], // supervisor
+                            parts[5], // type
+                            parts[6]  // file path
+                        );
+                        
+                        // Check for board ID if it exists
+                        if (parts.length > 7 && !parts[7].equals("NONE")) {
+                            sub.setBoardId(parts[7]);
+                        }
+                        
                         assignedSubmissions.add(sub);
+                        System.out.println("Found submission for student " + studentId + ": " + parts[2]);
                     }
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+        
+        System.out.println("Total submissions found for evaluator " + evaluatorId + ": " + assignedSubmissions.size());
         return assignedSubmissions;
     }
-
-    // In EvaluationController.java, add this method:
-public List<Submission> getChosenSubmissionsForEvaluator(String evaluatorId) {
-    List<Submission> chosenSubmissions = new ArrayList<>();
-    Map<String, String> chosenAssignments = new HashMap<>();
     
-    // Load chosen assignments
-    File assignmentFile = new File("assignments.txt");
-    if (assignmentFile.exists()) {
+    // Helper method to get all student IDs assigned to a specific evaluator
+    private List<String> getStudentsAssignedToEvaluator(String evaluatorId) {
+        List<String> studentIds = new ArrayList<>();
+        File assignmentFile = new File(ASSIGNMENT_FILE);
+        
+        if (!assignmentFile.exists()) {
+            System.out.println("No assignment file found.");
+            return studentIds;
+        }
+        
         try (BufferedReader reader = new BufferedReader(new FileReader(assignmentFile))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split("\\|");
-                if (parts.length == 4 && parts[3].equals(evaluatorId)) {
-                    chosenAssignments.put(parts[2], parts[3]); // studentId -> evaluatorId
+                if (parts.length == 4) { // assignmentId|sessionId|studentId|evaluatorId
+                    String assignmentEvaluatorId = parts[3];
+                    String studentId = parts[2];
+                    
+                    if (assignmentEvaluatorId.equals(evaluatorId)) {
+                        studentIds.add(studentId);
+                        System.out.println("Found assignment: " + studentId + " -> " + evaluatorId);
+                    }
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+        
+        return studentIds;
     }
     
-            // Load submissions for chosen students
-            try (BufferedReader reader = new BufferedReader(new FileReader(SUBMISSION_FILE))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String[] parts = line.split("\\|");
-                    if (parts.length == 7) {
-                        String studentId = parts[1];
-                        if (chosenAssignments.containsKey(studentId)) {
-                            Submission sub = new Submission(parts[0], parts[1], parts[2], 
-                                                        parts[3], parts[4], parts[5], parts[6]);
-                            chosenSubmissions.add(sub);
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return chosenSubmissions;
-        }
-    
-    // Get submissions assigned specifically to this evaluator (NEW METHOD - use this one)
-    public List<Submission> getAssignedSubmissionsForEvaluator(String evaluatorId) {
-        List<Submission> assignedSubmissions = new ArrayList<>();
-        Map<String, String> assignments = loadAssignments();
+    // Get sessions where evaluator is assigned (for conflict checking)
+    public List<String> getEvaluatorSessions(String evaluatorId) {
+        List<String> sessions = new ArrayList<>();
+        File sessionFile = new File(SESSION_FILE);
         
-        try (BufferedReader reader = new BufferedReader(new FileReader(SUBMISSION_FILE))) {
+        if (!sessionFile.exists()) {
+            return sessions;
+        }
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(sessionFile))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split("\\|");
-                if (parts.length == 7) {
-                    String studentId = parts[1];
-                    // Check if this SPECIFIC evaluator is assigned to this student
-                    if (assignments.containsKey(studentId) && 
-                        assignments.get(studentId).equals(evaluatorId)) {
-                        Submission sub = new Submission(parts[0], parts[1], parts[2], 
-                                                      parts[3], parts[4], parts[5], parts[6]);
-                        assignedSubmissions.add(sub);
+                if (parts.length >= 8) { // Has evaluators list at parts[7]
+                    String sessionId = parts[0];
+                    String evaluatorsStr = parts[7];
+                    
+                    if (!evaluatorsStr.isEmpty()) {
+                        String[] evaluatorArray = evaluatorsStr.split(",");
+                        for (String eval : evaluatorArray) {
+                            if (eval.equals(evaluatorId)) {
+                                sessions.add(sessionId);
+                                break;
+                            }
+                        }
                     }
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return assignedSubmissions;
+        
+        return sessions;
     }
     
     // Check if already evaluated
     public boolean hasEvaluated(String submissionId, String evaluatorId) {
         File file = new File(EVALUATION_FILE);
-        if (!file.exists()) return false;
+        if (!file.exists()) {
+            System.out.println("No evaluation file found.");
+            return false;
+        }
         
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
@@ -127,12 +162,14 @@ public List<Submission> getChosenSubmissionsForEvaluator(String evaluatorId) {
                 if (parts.length == 8 && 
                     parts[1].equals(submissionId) && 
                     parts[2].equals(evaluatorId)) {
+                    System.out.println("Already evaluated: " + submissionId + " by " + evaluatorId);
                     return true;
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+        
         return false;
     }
     
@@ -176,23 +213,37 @@ public List<Submission> getChosenSubmissionsForEvaluator(String evaluatorId) {
         return total / evaluations.size();
     }
     
-    // Load assignments from file
-    private Map<String, String> loadAssignments() {
-        Map<String, String> assignments = new HashMap<>();
-        File file = new File(ASSIGNMENT_FILE);
-        if (!file.exists()) return assignments;
+    // Get all evaluations by an evaluator
+    public List<Evaluation> getEvaluationsByEvaluator(String evaluatorId) {
+        List<Evaluation> evaluations = new ArrayList<>();
+        File file = new File(EVALUATION_FILE);
+        if (!file.exists()) return evaluations;
         
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split("\\|");
-                if (parts.length == 4) {
-                    assignments.put(parts[2], parts[3]); // studentId -> evaluatorId
+                if (parts.length == 8 && parts[2].equals(evaluatorId)) {
+                    Evaluation eval = new Evaluation(
+                        parts[0], parts[1], parts[2],
+                        Integer.parseInt(parts[3]),
+                        Integer.parseInt(parts[4]),
+                        Integer.parseInt(parts[5]),
+                        Integer.parseInt(parts[6]),
+                        parts[7]
+                    );
+                    evaluations.add(eval);
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return assignments;
+        return evaluations;
+    }
+    
+    // Check if evaluator has any assignments
+    public boolean hasAssignments(String evaluatorId) {
+        List<String> studentIds = getStudentsAssignedToEvaluator(evaluatorId);
+        return !studentIds.isEmpty();
     }
 }

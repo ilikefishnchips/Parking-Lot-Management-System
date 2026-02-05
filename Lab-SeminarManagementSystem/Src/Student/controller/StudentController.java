@@ -79,7 +79,7 @@ public class StudentController {
         return assignment;
     }
     
-    // Get all poster submissions
+    // In StudentController.java - add this method
     public List<Submission> getPosterSubmissions() {
         List<Submission> posters = new ArrayList<>();
         File file = new File(SUBMISSION_FILE);
@@ -93,7 +93,7 @@ public class StudentController {
                     String type = parts[5];
                     if (type.toLowerCase().contains("poster")) {
                         Submission sub = new Submission(parts[0], parts[1], parts[2], 
-                                                       parts[3], parts[4], parts[5], parts[6]);
+                                                    parts[3], parts[4], parts[5], parts[6]);
                         if (parts.length > 7 && !parts[7].equals("NONE")) {
                             sub.setBoardId(parts[7]);
                         }

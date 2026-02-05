@@ -17,6 +17,7 @@ import src.Student.controller.StudentDataController;
 import src.common.model.Award;
 import src.common.model.Board;
 import src.common.model.Report;
+import src.common.model.Submission;
 
 public class CoordinatorPanel extends JPanel {
     private final SessionController sessionController;
@@ -152,16 +153,22 @@ public class CoordinatorPanel extends JPanel {
         JScrollPane reqScroll = new JScrollPane(txtBoardRequirements);
         formPanel.add(reqScroll, gbc);
         
-        // Buttons
+        // Buttons - UPDATED TO INCLUDE POSTER ASSIGNMENT BUTTONS
         JPanel buttonPanel = new JPanel(new FlowLayout());
         JButton btnAddBoard = new JButton("Add Board");
         JButton btnGenerateLayout = new JButton("Generate Layout Report");
+        JButton btnAssignPoster = new JButton("Assign Poster");
+        JButton btnUnassignPoster = new JButton("Unassign Poster");
         
         btnAddBoard.addActionListener(e -> addNewBoard());
         btnGenerateLayout.addActionListener(e -> generateBoardLayoutReport());
+        btnAssignPoster.addActionListener(e -> assignPosterToBoard());
+        btnUnassignPoster.addActionListener(e -> unassignPosterFromBoard());
         
         buttonPanel.add(btnAddBoard);
         buttonPanel.add(btnGenerateLayout);
+        buttonPanel.add(btnAssignPoster);
+        buttonPanel.add(btnUnassignPoster);
         
         gbc.gridx = 0; gbc.gridy = ++row;
         gbc.gridwidth = 2;
@@ -171,8 +178,14 @@ public class CoordinatorPanel extends JPanel {
         
         // Bottom: Board Table
         String[] columnNames = {"Board ID", "Location", "Status", "Poster ID", "Size", "Requirements"};
-        boardTableModel = new DefaultTableModel(columnNames, 0);
+        boardTableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Make table non-editable
+            }
+        };
         boardTable = new JTable(boardTableModel);
+        boardTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JScrollPane tableScroll = new JScrollPane(boardTable);
         panel.add(tableScroll, BorderLayout.CENTER);
         
@@ -368,11 +381,13 @@ public class CoordinatorPanel extends JPanel {
                 board.getBoardId(),
                 board.getLocation(),
                 board.getStatus(),
-                posterId,
+                posterId,  // This will show "N/A" instead of "NONE"
                 size,
                 board.getSpecialRequirements()
             });
         }
+        
+        System.out.println("Loaded " + boards.size() + " boards into table");
     }
     
     private void addNewBoard() {
@@ -432,8 +447,148 @@ public class CoordinatorPanel extends JPanel {
         txtBoardHeight.setText("");
         txtBoardRequirements.setText("");
     }
+
+    // POSTER ASSIGNMENT METHODS
+    private void assignPosterToBoard() {
+        // Get selected board from table
+        int selectedRow = boardTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a board from the table.");
+            return;
+        }
+        
+        String boardId = (String) boardTableModel.getValueAt(selectedRow, 0);
+        String sessionStr = (String) cbBoardSession.getSelectedItem();
+        
+        if (sessionStr == null || sessionStr.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please select a session first.");
+            return;
+        }
+        
+        String sessionId = sessionStr.split(":")[0].trim();
+        
+        // Get available poster submissions for this session
+        List<Submission> posterSubmissions = boardController.getPosterSubmissionsForSession(sessionId);
+        
+        if (posterSubmissions.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No poster submissions available for this session.");
+            return;
+        }
+        
+        // Create dialog for poster selection
+        JDialog assignDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Assign Poster to Board", true);
+        assignDialog.setLayout(new BorderLayout());
+        assignDialog.setSize(400, 300);
+        assignDialog.setLocationRelativeTo(this);
+        
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Panel for poster selection
+        JPanel selectionPanel = new JPanel(new BorderLayout());
+        selectionPanel.setBorder(BorderFactory.createTitledBorder("Select Poster"));
+        
+        String[] columnNames = {"Submission ID", "Title", "Student ID"};
+        DefaultTableModel posterTableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        JTable posterTable = new JTable(posterTableModel);
+        posterTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        
+        for (Submission submission : posterSubmissions) {
+            posterTableModel.addRow(new Object[]{
+                submission.getSubmissionId(),
+                submission.getTitle(),
+                submission.getStudentId()
+            });
+        }
+        
+        JScrollPane scrollPane = new JScrollPane(posterTable);
+        selectionPanel.add(scrollPane, BorderLayout.CENTER);
+        
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnAssign = new JButton("Assign");
+        JButton btnCancel = new JButton("Cancel");
+        
+        btnAssign.addActionListener(e -> {
+            int selectedPosterRow = posterTable.getSelectedRow();
+            if (selectedPosterRow == -1) {
+                JOptionPane.showMessageDialog(assignDialog, "Please select a poster.");
+                return;
+            }
+            
+            String submissionId = (String) posterTableModel.getValueAt(selectedPosterRow, 0);
+            String title = (String) posterTableModel.getValueAt(selectedPosterRow, 1);
+            
+            // Confirm assignment
+            int confirm = JOptionPane.showConfirmDialog(assignDialog,
+                "Assign poster:\n" +
+                "Title: " + title + "\n" +
+                "To board: " + boardId + "\n\n" +
+                "Continue?",
+                "Confirm Assignment", JOptionPane.YES_NO_OPTION);
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                // Update board assignment
+                if (boardController.assignPosterToBoard(submissionId, boardId) &&
+                    boardController.updateSubmissionWithBoard(submissionId, boardId)) {
+                    JOptionPane.showMessageDialog(assignDialog, "Poster assigned successfully!");
+                    assignDialog.dispose();
+                    loadBoardsIntoTable(); // Refresh the table
+                } else {
+                    JOptionPane.showMessageDialog(assignDialog, "Error assigning poster.");
+                }
+            }
+        });
+        
+        btnCancel.addActionListener(e -> assignDialog.dispose());
+        
+        buttonPanel.add(btnAssign);
+        buttonPanel.add(btnCancel);
+        
+        mainPanel.add(selectionPanel, BorderLayout.CENTER);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        assignDialog.add(mainPanel);
+        assignDialog.setVisible(true);
+    }
+
+    private void unassignPosterFromBoard() {
+        int selectedRow = boardTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a board from the table.");
+            return;
+        }
+        
+        String boardId = (String) boardTableModel.getValueAt(selectedRow, 0);
+        String posterId = (String) boardTableModel.getValueAt(selectedRow, 3);
+        
+        if (posterId.equals("N/A")) {
+            JOptionPane.showMessageDialog(this, "This board doesn't have a poster assigned.");
+            return;
+        }
+        
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Remove poster assignment from board " + boardId + "?\n" +
+            "Poster ID: " + posterId,
+            "Confirm Unassignment", JOptionPane.YES_NO_OPTION);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            if (boardController.unassignPosterFromBoard(boardId) &&
+                boardController.updateSubmissionWithBoard(posterId, "NONE")) {
+                JOptionPane.showMessageDialog(this, "Poster unassigned successfully!");
+                loadBoardsIntoTable();
+            } else {
+                JOptionPane.showMessageDialog(this, "Error unassigning poster.");
+            }
+        }
+    }
     
-    // ============ SESSION MANAGEMENT METHODS (UPDATED) ============
+    // ============ SESSION MANAGEMENT METHODS ============
     private JPanel createSessionPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));

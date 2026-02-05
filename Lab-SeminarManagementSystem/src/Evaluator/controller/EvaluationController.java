@@ -1,9 +1,9 @@
 package src.Evaluator.controller;
 
-import src.common.model.Evaluation;
-import src.common.model.Submission;
 import java.io.*;
 import java.util.*;
+import src.common.model.Evaluation;
+import src.common.model.Submission;
 
 public class EvaluationController {
     private final String EVALUATION_FILE = "evaluations.txt";
@@ -47,6 +47,47 @@ public class EvaluationController {
         }
         return assignedSubmissions;
     }
+
+    // In EvaluationController.java, add this method:
+public List<Submission> getChosenSubmissionsForEvaluator(String evaluatorId) {
+    List<Submission> chosenSubmissions = new ArrayList<>();
+    Map<String, String> chosenAssignments = new HashMap<>();
+    
+    // Load chosen assignments
+    File assignmentFile = new File("assignments.txt");
+    if (assignmentFile.exists()) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(assignmentFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split("\\|");
+                if (parts.length == 4 && parts[3].equals(evaluatorId)) {
+                    chosenAssignments.put(parts[2], parts[3]); // studentId -> evaluatorId
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+            // Load submissions for chosen students
+            try (BufferedReader reader = new BufferedReader(new FileReader(SUBMISSION_FILE))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.split("\\|");
+                    if (parts.length == 7) {
+                        String studentId = parts[1];
+                        if (chosenAssignments.containsKey(studentId)) {
+                            Submission sub = new Submission(parts[0], parts[1], parts[2], 
+                                                        parts[3], parts[4], parts[5], parts[6]);
+                            chosenSubmissions.add(sub);
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return chosenSubmissions;
+        }
     
     // Get submissions assigned specifically to this evaluator (NEW METHOD - use this one)
     public List<Submission> getAssignedSubmissionsForEvaluator(String evaluatorId) {

@@ -1,20 +1,21 @@
 package src.Coordinator.ui;
 
-import src.Coordinator.controller.BoardController;
-import src.Coordinator.controller.EnhancedAnalyticsController;
-import src.Coordinator.controller.SessionController;
-import src.Coordinator.controller.ReportController;
-import src.Coordinator.model.Session;
-import src.common.model.Award;
-import src.common.model.Board;
-import src.common.model.Report;
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import src.Coordinator.controller.BoardController;
+import src.Coordinator.controller.EnhancedAnalyticsController;
+import src.Coordinator.controller.ReportController;
+import src.Coordinator.controller.SessionController;
+import src.Coordinator.model.Session;
+import src.common.model.Award;
+import src.common.model.Board;
+import src.common.model.Report;
 
 public class CoordinatorPanel extends JPanel {
     private final SessionController sessionController;
@@ -38,12 +39,13 @@ public class CoordinatorPanel extends JPanel {
     private java.util.List<String> studentList;
     private java.util.List<String> evaluatorList;
     
-    // Session Management Tab
+    // Session Management Tab (UPDATED VARIABLES)
     private JList<Session> sessionList;
     private DefaultListModel<Session> sessionListModel;
-    private JTextField txtDate, txtTime, txtVenue, txtCapacity;
+    private JTextField txtStartDateTime, txtEndDateTime, txtVenue, txtCapacity;
     private JComboBox<String> cbType;
     private JList<String> studentSelector, evaluatorSelector;
+    private JLabel lblConflictWarning;
     
     // Reports Tab
     private JTextArea reportArea;
@@ -66,7 +68,7 @@ public class CoordinatorPanel extends JPanel {
     
     private void initializeUserLists() {
         studentList = Arrays.asList("STU001 - John Doe", "STU002 - Jane Smith", "STU003 - Bob Johnson");
-        evaluatorList = Arrays.asList("EVAL001 - Dr. Smith", "EVAL002 - Prof. Chen");
+        evaluatorList = Arrays.asList("EVAL001 - Dr. Smith", "EVAL002 - Prof. Chen", "EVAL003 - Dr. Lee");
     }
     
     private void initUI() {
@@ -347,7 +349,7 @@ public class CoordinatorPanel extends JPanel {
         cbBoardSession.removeAllItems();
         java.util.List<Session> sessions = sessionController.getAllSessions();
         for (Session session : sessions) {
-            cbBoardSession.addItem(session.getSessionId() + ": " + session.getDate());
+            cbBoardSession.addItem(session.getSessionId() + ": " + session.getStartDateTime());
         }
     }
     
@@ -428,7 +430,7 @@ public class CoordinatorPanel extends JPanel {
         txtBoardRequirements.setText("");
     }
     
-    // ============ SESSION MANAGEMENT METHODS ============
+    // ============ SESSION MANAGEMENT METHODS (UPDATED) ============
     private JPanel createSessionPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -450,27 +452,32 @@ public class CoordinatorPanel extends JPanel {
         
         int row = 0;
         
-        // Date (Date Picker style)
+        // Start Date/Time
         gbc.gridx = 0; gbc.gridy = row;
-        formPanel.add(new JLabel("Date (YYYY-MM-DD):"), gbc);
+        formPanel.add(new JLabel("Start Date/Time (YYYY-MM-DD HH:MM):"), gbc);
         gbc.gridx = 1;
-        txtDate = new JTextField(15);
-        formPanel.add(txtDate, gbc);
+        txtStartDateTime = new JTextField(15);
+        formPanel.add(txtStartDateTime, gbc);
         gbc.gridx = 2;
-        JButton btnToday = new JButton("Today");
-        btnToday.addActionListener(e -> txtDate.setText(new SimpleDateFormat("yyyy-MM-dd").format(new Date())));
-        formPanel.add(btnToday, gbc);
+        JButton btnNowStart = new JButton("Now");
+        btnNowStart.addActionListener(e -> txtStartDateTime.setText(
+            new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date())));
+        formPanel.add(btnNowStart, gbc);
         
-        // Time
+        // End Date/Time
         gbc.gridx = 0; gbc.gridy = ++row;
-        formPanel.add(new JLabel("Time (HH:MM):"), gbc);
+        formPanel.add(new JLabel("End Date/Time (YYYY-MM-DD HH:MM):"), gbc);
         gbc.gridx = 1;
-        txtTime = new JTextField(15);
-        formPanel.add(txtTime, gbc);
+        txtEndDateTime = new JTextField(15);
+        formPanel.add(txtEndDateTime, gbc);
         gbc.gridx = 2;
-        JButton btnNow = new JButton("Now");
-        btnNow.addActionListener(e -> txtTime.setText(new SimpleDateFormat("HH:mm").format(new Date())));
-        formPanel.add(btnNow, gbc);
+        JButton btnNowEnd = new JButton("Now + 2h");
+        btnNowEnd.addActionListener(e -> {
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.HOUR, 2);
+            txtEndDateTime.setText(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(cal.getTime()));
+        });
+        formPanel.add(btnNowEnd, gbc);
         
         // Venue
         gbc.gridx = 0; gbc.gridy = ++row;
@@ -509,13 +516,21 @@ public class CoordinatorPanel extends JPanel {
         
         // Evaluator Selector (Multiple selection)
         gbc.gridx = 0; gbc.gridy = ++row;
-        formPanel.add(new JLabel("Select Evaluators:"), gbc);
+        formPanel.add(new JLabel("Select Evaluators (Multiple):"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 2;
         evaluatorSelector = new JList<>(evaluatorList.toArray(new String[0]));
         evaluatorSelector.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         JScrollPane evaluatorScroll = new JScrollPane(evaluatorSelector);
         evaluatorScroll.setPreferredSize(new Dimension(200, 100));
         formPanel.add(evaluatorScroll, gbc);
+        
+        // Conflict Check Label
+        gbc.gridx = 0; gbc.gridy = ++row;
+        gbc.gridwidth = 3;
+        lblConflictWarning = new JLabel("");
+        lblConflictWarning.setForeground(Color.RED);
+        lblConflictWarning.setVisible(false);
+        formPanel.add(lblConflictWarning, gbc);
         
         // Buttons Panel
         JPanel buttonPanel = new JPanel(new GridLayout(1, 3, 10, 10));
@@ -533,6 +548,27 @@ public class CoordinatorPanel extends JPanel {
         
         panel.add(formPanel, BorderLayout.CENTER);
         
+        // Add listeners for real-time conflict checking
+        txtStartDateTime.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyReleased(java.awt.event.KeyEvent e) {
+                checkEvaluatorConflicts();
+            }
+        });
+        
+        txtEndDateTime.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyReleased(java.awt.event.KeyEvent e) {
+                checkEvaluatorConflicts();
+            }
+        });
+        
+        evaluatorSelector.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                checkEvaluatorConflicts();
+            }
+        });
+        
         // Session selection listener
         sessionList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && sessionList.getSelectedValue() != null) {
@@ -547,6 +583,54 @@ public class CoordinatorPanel extends JPanel {
         btnDelete.addActionListener(e -> deleteSession());
         
         return panel;
+    }
+    
+    private void checkEvaluatorConflicts() {
+        lblConflictWarning.setText("");
+        lblConflictWarning.setVisible(false);
+        
+        String startDateTime = txtStartDateTime.getText();
+        String endDateTime = txtEndDateTime.getText();
+        
+        if (startDateTime.isEmpty() || endDateTime.isEmpty()) {
+            return;
+        }
+        
+        List<String> selectedEvaluators = evaluatorSelector.getSelectedValuesList();
+        StringBuilder conflictMessage = new StringBuilder();
+        
+        for (String evaluatorItem : selectedEvaluators) {
+            String evaluatorId = evaluatorItem.split(" - ")[0];
+            
+            if (!sessionController.isEvaluatorAvailable(evaluatorId, startDateTime, endDateTime)) {
+                // Get conflicting sessions
+                List<Session> evaluatorSessions = sessionController.getSessionsByEvaluator(evaluatorId);
+                for (Session session : evaluatorSessions) {
+                    try {
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+                        Date newStart = sdf.parse(startDateTime);
+                        Date newEnd = sdf.parse(endDateTime);
+                        Date existingStart = sdf.parse(session.getStartDateTime());
+                        Date existingEnd = sdf.parse(session.getEndDateTime());
+                        
+                        if (newStart.before(existingEnd) && newEnd.after(existingStart)) {
+                            conflictMessage.append(evaluatorItem)
+                                .append(" is busy in session ").append(session.getSessionId())
+                                .append(" (").append(session.getStartDateTime()).append(" - ")
+                                .append(session.getEndDateTime()).append(")\n");
+                        }
+                    } catch (ParseException e) {
+                        // Ignore parse errors
+                    }
+                }
+            }
+        }
+        
+        if (conflictMessage.length() > 0) {
+            lblConflictWarning.setText("<html><font color='red'>Conflicts detected:</font><br>" + 
+                                      conflictMessage.toString() + "</html>");
+            lblConflictWarning.setVisible(true);
+        }
     }
     
     private JPanel createReportPanel() {
@@ -611,10 +695,10 @@ public class CoordinatorPanel extends JPanel {
             super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             if (value instanceof Session) {
                 Session session = (Session) value;
-                setText(String.format("%s: %s %s (%s)", 
+                setText(String.format("%s: %s to %s (%s)", 
                     session.getSessionId(),
-                    session.getDate(),
-                    session.getTime(),
+                    session.getStartDateTime(),
+                    session.getEndDateTime(),
                     session.getSessionType()));
             }
             return this;
@@ -630,8 +714,8 @@ public class CoordinatorPanel extends JPanel {
     }
     
     private void loadSessionData(Session session) {
-        txtDate.setText(session.getDate());
-        txtTime.setText(session.getTime());
+        txtStartDateTime.setText(session.getStartDateTime());
+        txtEndDateTime.setText(session.getEndDateTime());
         txtVenue.setText(session.getVenue());
         txtCapacity.setText(String.valueOf(session.getMaxCapacity()));
         
@@ -666,6 +750,9 @@ public class CoordinatorPanel extends JPanel {
             }
         }
         evaluatorSelector.setSelectedIndices(getIndices(selectedEvaluators, evaluatorList));
+        
+        // Check for conflicts
+        checkEvaluatorConflicts();
     }
     
     private int[] getIndices(java.util.List<String> selectedItems, java.util.List<String> allItems) {
@@ -679,60 +766,33 @@ public class CoordinatorPanel extends JPanel {
         return indices.stream().mapToInt(i -> i).toArray();
     }
     
-    private boolean checkTimeConflict(String date, String time) {
-        try {
-            Date newDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(date + " " + time);
-            
-            for (int i = 0; i < sessionListModel.size(); i++) {
-                Session existing = sessionListModel.get(i);
-                if (sessionList.getSelectedValue() != null && 
-                    existing.getSessionId().equals(sessionList.getSelectedValue().getSessionId())) {
-                    continue; // Skip the session being edited
-                }
-                
-                Date existingDateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm")
-                    .parse(existing.getDate() + " " + existing.getTime());
-                
-                // Check if same date and within 2 hours (assuming sessions are 2 hours)
-                if (existing.getDate().equals(date)) {
-                    long diffHours = Math.abs(newDateTime.getTime() - existingDateTime.getTime()) / (1000 * 60 * 60);
-                    if (diffHours < 2) {
-                        JOptionPane.showMessageDialog(this,
-                            "Time conflict with session " + existing.getSessionId() + 
-                            " at " + existing.getTime(),
-                            "Time Conflict", JOptionPane.WARNING_MESSAGE);
-                        return true;
-                    }
-                }
-            }
-            return false;
-        } catch (ParseException e) {
-            return false;
-        }
-    }
-    
     private void createSession() {
         try {
             // Validate fields
-            if (txtDate.getText().isEmpty() || txtTime.getText().isEmpty() || 
+            if (txtStartDateTime.getText().isEmpty() || txtEndDateTime.getText().isEmpty() || 
                 txtVenue.getText().isEmpty() || txtCapacity.getText().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Please fill all required fields.");
                 return;
             }
             
-            // Check time conflict
-            if (checkTimeConflict(txtDate.getText(), txtTime.getText())) {
-                return;
+            // Check evaluator conflicts
+            if (lblConflictWarning.isVisible() && lblConflictWarning.getText().contains("Conflicts detected")) {
+                int confirm = JOptionPane.showConfirmDialog(this,
+                    "There are evaluator conflicts. Create session anyway?",
+                    "Confirm Session Creation", JOptionPane.YES_NO_OPTION);
+                if (confirm != JOptionPane.YES_OPTION) {
+                    return;
+                }
             }
             
             String sessionId = "SESS" + (sessionListModel.size() + 1);
-            String date = txtDate.getText();
-            String time = txtTime.getText();
+            String startDateTime = txtStartDateTime.getText();
+            String endDateTime = txtEndDateTime.getText();
             String venue = txtVenue.getText();
             String type = (String) cbType.getSelectedItem();
             int capacity = Integer.parseInt(txtCapacity.getText());
             
-            Session session = new Session(sessionId, date, time, venue, type, capacity);
+            Session session = new Session(sessionId, startDateTime, endDateTime, venue, type, capacity);
             
             // Add selected students
             for (String studentItem : studentSelector.getSelectedValuesList()) {
@@ -751,7 +811,7 @@ public class CoordinatorPanel extends JPanel {
                 loadSessions();
                 clearForm();
             } else {
-                JOptionPane.showMessageDialog(this, "Error creating session.");
+                JOptionPane.showMessageDialog(this, "Error creating session. There may be time conflicts.");
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Please enter valid capacity number.");
@@ -768,13 +828,18 @@ public class CoordinatorPanel extends JPanel {
         }
         
         try {
-            // Check time conflict
-            if (checkTimeConflict(txtDate.getText(), txtTime.getText())) {
-                return;
+            // Check evaluator conflicts
+            if (lblConflictWarning.isVisible() && lblConflictWarning.getText().contains("Conflicts detected")) {
+                int confirm = JOptionPane.showConfirmDialog(this,
+                    "There are evaluator conflicts. Update session anyway?",
+                    "Confirm Session Update", JOptionPane.YES_NO_OPTION);
+                if (confirm != JOptionPane.YES_OPTION) {
+                    return;
+                }
             }
             
-            selected.setDate(txtDate.getText());
-            selected.setTime(txtTime.getText());
+            selected.setStartDateTime(txtStartDateTime.getText());
+            selected.setEndDateTime(txtEndDateTime.getText());
             selected.setVenue(txtVenue.getText());
             selected.setSessionType((String) cbType.getSelectedItem());
             
@@ -796,7 +861,7 @@ public class CoordinatorPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Session updated successfully!");
                 loadSessions();
             } else {
-                JOptionPane.showMessageDialog(this, "Error updating session.");
+                JOptionPane.showMessageDialog(this, "Error updating session. There may be time conflicts.");
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
@@ -877,11 +942,13 @@ public class CoordinatorPanel extends JPanel {
     }
     
     private void clearForm() {
-        txtDate.setText("");
-        txtTime.setText("");
+        txtStartDateTime.setText("");
+        txtEndDateTime.setText("");
         txtVenue.setText("");
         txtCapacity.setText("");
         studentSelector.clearSelection();
         evaluatorSelector.clearSelection();
+        lblConflictWarning.setText("");
+        lblConflictWarning.setVisible(false);
     }
 }

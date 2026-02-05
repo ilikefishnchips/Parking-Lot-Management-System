@@ -13,6 +13,7 @@ import src.Coordinator.controller.EnhancedAnalyticsController;
 import src.Coordinator.controller.ReportController;
 import src.Coordinator.controller.SessionController;
 import src.Coordinator.model.Session;
+import src.Student.controller.StudentDataController;
 import src.common.model.Award;
 import src.common.model.Board;
 import src.common.model.Report;
@@ -22,6 +23,7 @@ public class CoordinatorPanel extends JPanel {
     private final ReportController reportController;
     private final BoardController boardController;
     private final EnhancedAnalyticsController analyticsController;
+    private final StudentDataController studentDataController;
     
     // Board Management UI Components
     private JTable boardTable;
@@ -60,6 +62,7 @@ public class CoordinatorPanel extends JPanel {
         this.reportController = new ReportController();
         this.boardController = new BoardController();
         this.analyticsController = new EnhancedAnalyticsController();
+        this.studentDataController = new StudentDataController();
         initializeUserLists();
         
         initUI();
@@ -807,6 +810,17 @@ public class CoordinatorPanel extends JPanel {
             }
             
             if (sessionController.createSession(session)) {
+                // FIX: Update student assignments in students_data.txt
+                if (!session.getEvaluatorIds().isEmpty()) {
+                    String evaluatorId = session.getEvaluatorIds().get(0);
+                    for (String studentId : session.getStudentIds()) {
+                        // Update student's assignment in their data file
+                        studentDataController.assignStudentToSession(studentId, sessionId, evaluatorId);
+                        // Also create assignment record for evaluator panel
+                        sessionController.assignEvaluatorToStudent(evaluatorId, studentId, sessionId);
+                    }
+                }
+                
                 JOptionPane.showMessageDialog(this, "Session created successfully!");
                 loadSessions();
                 clearForm();
@@ -838,6 +852,11 @@ public class CoordinatorPanel extends JPanel {
                 }
             }
             
+            // Clear old assignments first
+            for (String studentId : selected.getStudentIds()) {
+                studentDataController.removeStudentAssignment(studentId);
+            }
+            
             selected.setStartDateTime(txtStartDateTime.getText());
             selected.setEndDateTime(txtEndDateTime.getText());
             selected.setVenue(txtVenue.getText());
@@ -858,6 +877,15 @@ public class CoordinatorPanel extends JPanel {
             }
             
             if (sessionController.updateSession(selected)) {
+                // Update student assignments
+                if (!selected.getEvaluatorIds().isEmpty()) {
+                    String evaluatorId = selected.getEvaluatorIds().get(0);
+                    for (String studentId : selected.getStudentIds()) {
+                        studentDataController.assignStudentToSession(studentId, selected.getSessionId(), evaluatorId);
+                        sessionController.assignEvaluatorToStudent(evaluatorId, studentId, selected.getSessionId());
+                    }
+                }
+                
                 JOptionPane.showMessageDialog(this, "Session updated successfully!");
                 loadSessions();
             } else {
@@ -880,6 +908,11 @@ public class CoordinatorPanel extends JPanel {
             "Confirm Delete", JOptionPane.YES_NO_OPTION);
         
         if (confirm == JOptionPane.YES_OPTION) {
+            // Remove student assignments
+            for (String studentId : selected.getStudentIds()) {
+                studentDataController.removeStudentAssignment(studentId);
+            }
+            
             if (sessionController.deleteSession(selected.getSessionId())) {
                 JOptionPane.showMessageDialog(this, "Session deleted successfully!");
                 loadSessions();

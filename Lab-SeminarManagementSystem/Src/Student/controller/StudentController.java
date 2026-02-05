@@ -1,17 +1,18 @@
 package src.Student.controller;
 
-import src.Student.model.Student;
-import src.common.model.Submission;
 import java.io.*;
 import java.util.*;
-import java.util.UUID;
+import src.Student.model.Student;
+import src.common.model.Submission;
 
 public class StudentController {
     private final String SUBMISSION_FILE = "submissions.txt";
     private StudentDataController studentDataController;
+    private src.Coordinator.controller.SessionController sessionController;
     
     public StudentController() {
         this.studentDataController = new StudentDataController();
+        this.sessionController = new src.Coordinator.controller.SessionController();
     }
     
     public boolean submitResearch(Student student, String title, String abstractText, 
@@ -46,6 +47,8 @@ public class StudentController {
     // Get student's assignment info
     public Map<String, String> getStudentAssignment(String studentId) {
         Map<String, String> assignment = new HashMap<>();
+        
+        // First check student data file
         Student student = studentDataController.loadStudent(studentId);
         
         if (student != null) {
@@ -53,6 +56,12 @@ public class StudentController {
             assignment.put("evaluatorId", student.getAssignedEvaluatorId());
             assignment.put("preferredType", student.getPreferredPresentationType());
             assignment.put("status", student.getStatus());
+        }
+        
+        // Also check assignments file from session controller
+        Map<String, String> sessionAssignment = sessionController.getStudentAssignment(studentId);
+        if (!sessionAssignment.isEmpty()) {
+            assignment.putAll(sessionAssignment);
         }
         
         return assignment;

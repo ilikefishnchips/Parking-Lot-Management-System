@@ -171,13 +171,14 @@ public class SessionController {
         }
     }
     
-    // Existing methods...
+    // Delete session
     public boolean deleteSession(String sessionId) {
         List<Session> sessions = getAllSessions();
         sessions.removeIf(s -> s.getSessionId().equals(sessionId));
         return saveAllSessions(sessions);
     }
     
+    // Assign student to session
     public boolean assignStudentToSession(String studentId, String sessionId) {
         List<Session> sessions = getAllSessions();
         
@@ -193,6 +194,7 @@ public class SessionController {
         return false; // Session not found
     }
     
+    // Assign evaluator to session
     public boolean assignEvaluatorToSession(String evaluatorId, String sessionId) {
         List<Session> sessions = getAllSessions();
         
@@ -209,6 +211,7 @@ public class SessionController {
         return false;
     }
     
+    // Assign evaluator to student (creates assignment record)
     public boolean assignEvaluatorToStudent(String evaluatorId, String studentId, String sessionId) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(ASSIGNMENT_FILE, true))) {
             String assignmentId = UUID.randomUUID().toString().substring(0, 8);
@@ -219,5 +222,32 @@ public class SessionController {
             e.printStackTrace();
             return false;
         }
+    }
+    
+    // Get assignments for a student
+    public Map<String, String> getStudentAssignment(String studentId) {
+        Map<String, String> assignment = new HashMap<>();
+        File file = new File(ASSIGNMENT_FILE);
+        
+        if (!file.exists()) {
+            return assignment;
+        }
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split("\\|");
+                if (parts.length == 4 && parts[2].equals(studentId)) {
+                    assignment.put("sessionId", parts[1]);
+                    assignment.put("evaluatorId", parts[3]);
+                    assignment.put("assignmentId", parts[0]);
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        
+        return assignment;
     }
 }

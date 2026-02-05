@@ -7,12 +7,11 @@ import src.common.model.Submission;
 
 public class StudentController {
     private final String SUBMISSION_FILE = "submissions.txt";
+    private final String ASSIGNMENT_FILE = "assignments.txt";
     private StudentDataController studentDataController;
-    private src.Coordinator.controller.SessionController sessionController;
     
     public StudentController() {
         this.studentDataController = new StudentDataController();
-        this.sessionController = new src.Coordinator.controller.SessionController();
     }
     
     public boolean submitResearch(Student student, String title, String abstractText, 
@@ -58,10 +57,23 @@ public class StudentController {
             assignment.put("status", student.getStatus());
         }
         
-        // Also check assignments file from session controller
-        Map<String, String> sessionAssignment = sessionController.getStudentAssignment(studentId);
-        if (!sessionAssignment.isEmpty()) {
-            assignment.putAll(sessionAssignment);
+        // Also check assignments file directly
+        File assignmentFile = new File(ASSIGNMENT_FILE);
+        if (assignmentFile.exists()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(assignmentFile))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.split("\\|");
+                    if (parts.length == 4 && parts[2].equals(studentId)) {
+                        assignment.put("sessionId", parts[1]);
+                        assignment.put("evaluatorId", parts[3]);
+                        assignment.put("assignmentId", parts[0]);
+                        break;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         
         return assignment;

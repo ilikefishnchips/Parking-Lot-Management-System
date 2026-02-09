@@ -6,6 +6,7 @@ public abstract class Vehicle {
     private String licensePlate;
     private LocalDateTime entryTime;
     private LocalDateTime exitTime;
+    private String parkingSpotId;  // To track which spot the vehicle is in
 
     public Vehicle(String licensePlate) {
         this.licensePlate = licensePlate;
@@ -20,4 +21,6 @@ public abstract class Vehicle {
     
     public LocalDateTime getExitTime() { return exitTime; }
     public void setExitTime(LocalDateTime exitTime) { this.exitTime = exitTime; }
+    public String getParkingSpotId() { return parkingSpotId; }
+    public void setParkingSpotId(String parkingSpotId) { this.parkingSpotId = parkingSpotId; }
 }

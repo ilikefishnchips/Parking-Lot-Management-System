@@ -4,6 +4,7 @@ import javax.swing.*;
 
 
 import main.java.controller.EntryService;
+import main.java.model.ParkingLot;
 import main.java.model.ParkingSpot;
 import main.java.model.ParkingSpotType;
 import main.java.model.Ticket;
@@ -68,6 +69,14 @@ public class EntryPanel extends JPanel {
                 handleParkButton();
             }
         });
+        cmbVehicleType.addActionListener(new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            loadRealSpots();
+            }
+        });
+         // Load spots initially
+        loadRealSpots();
     }
 
     private void handleParkButton() {
@@ -103,15 +112,30 @@ public class EntryPanel extends JPanel {
 
     // --- MOCK DATA HELPER ---
     // In the real project, Member 1 will give you a List<ParkingSpot>
-    private void loadMockSpots() {
-        List<ParkingSpot> mockSpots = new ArrayList<>();
-        mockSpots.add(new ParkingSpot("L1-C1", ParkingSpotType.COMPACT));
-        mockSpots.add(new ParkingSpot("L1-R1", ParkingSpotType.REGULAR));
-        mockSpots.add(new ParkingSpot("L1-H1", ParkingSpotType.HANDICAPPED));
+// In EntryPanel.java, replace the loadMockSpots() method:
 
-        for (ParkingSpot s : mockSpots) {
-            cmbSpots.addItem(new ParkingSpotWrapper(s));
+    private void loadRealSpots() {
+        // Clear existing items
+        cmbSpots.removeAllItems();
+        
+        // Get selected vehicle type
+        String vehicleType = (String) cmbVehicleType.getSelectedItem();
+        
+        // Get available spots from ParkingLot
+        ParkingLot parkingLot = ParkingLot.getInstance();
+        List<ParkingSpot> availableSpots = parkingLot.findAvailableSpots(vehicleType);
+        
+        if (availableSpots.isEmpty()) {
+            cmbSpots.addItem(new ParkingSpotWrapper(null)); // Add a "No spots available" item
+        } else {
+            for (ParkingSpot spot : availableSpots) {
+                cmbSpots.addItem(new ParkingSpotWrapper(spot));
+            }
         }
+        
+        // Refresh the dropdown
+        cmbSpots.revalidate();
+        cmbSpots.repaint();
     }
 
     // Helper class to make the Dropdown look nice
@@ -121,8 +145,12 @@ public class EntryPanel extends JPanel {
         
         @Override
         public String toString() {
-            String status = spot.isOccupied() ? "[OCCUPIED]" : "[Free]";
-            return spot.getSpotId() + " (" + spot.getType() + ") " + status;
+            if (spot == null) {
+                return "No available spots for this vehicle type";
+            }
+            String status = spot.isOccupied() ? "[OCCUPIED]" : "[FREE]";
+            return String.format("%s (%s) %s - RM%.1f/hour", 
+                spot.getSpotId(), spot.getType(), status, spot.getHourlyRate());
         }
     }
 }

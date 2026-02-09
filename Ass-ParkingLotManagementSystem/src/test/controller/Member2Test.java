@@ -1,4 +1,4 @@
-package test;
+package test.controller;
 
 import main.java.controller.EntryService;
 import main.java.model.ParkingSpot;

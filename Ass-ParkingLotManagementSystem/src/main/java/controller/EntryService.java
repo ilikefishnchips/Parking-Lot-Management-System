@@ -1,5 +1,8 @@
 package main.java.controller;
 
+import main.java.model.ParkingSpot;
+import main.java.model.Ticket;
+import main.java.model.Vehicle;
 
 public class EntryService {
 

@@ -1,5 +1,11 @@
 package main.java.controller;
 
+import main.java.model.Vehicle;
+import main.java.model.Motorcycle;
+import main.java.model.Car;
+import main.java.model.SUV;
+import main.java.model.HandicappedVehicle;
+
 public class VehicleFactory {
     
     public static Vehicle createVehicle(String type, String plate) {

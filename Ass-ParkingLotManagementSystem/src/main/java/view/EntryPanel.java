@@ -46,7 +46,6 @@ public class EntryPanel extends JPanel {
 
         inputPanel.add(new JLabel("Select Spot:"));
         cmbSpots = new JComboBox<>();
-        loadMockSpots(); // Helper to fill dropdown
         inputPanel.add(cmbSpots);
 
         btnPark = new JButton("Generate Ticket");
@@ -110,9 +109,6 @@ public class EntryPanel extends JPanel {
         }
     }
 
-    // --- MOCK DATA HELPER ---
-    // In the real project, Member 1 will give you a List<ParkingSpot>
-// In EntryPanel.java, replace the loadMockSpots() method:
 
     private void loadRealSpots() {
         // Clear existing items

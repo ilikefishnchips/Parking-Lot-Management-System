@@ -1,4 +1,4 @@
-package test.model;
+package test.controller;
 
 import main.java.model.*;
 
@@ -16,7 +16,7 @@ public class Member1Test {
         System.out.println("\n2. Testing Spot ID Format:");
         ParkingSpot spot = new ParkingSpot(1, "A", 5, ParkingSpotType.COMPACT);
         System.out.println("   Spot ID: " + spot.getSpotId());
-        System.out.println("   Expected: F1-R1-S5, Got: " + spot.getSpotId());
+        System.out.println("   Expected: F1-RA-S5, Got: " + spot.getSpotId());
         
         // Test 3: Hourly Rates
         System.out.println("\n3. Testing Hourly Rates:");
@@ -59,7 +59,7 @@ public class Member1Test {
         
         // Test 7: Get Spot by ID
         System.out.println("\n7. Testing Get Spot by ID:");
-        ParkingSpot foundSpot = lot1.getParkingSpotById("F1-A-1");
+        ParkingSpot foundSpot = lot1.getParkingSpotById("F1-RA-S1");
         if (foundSpot != null) {
             System.out.println("   Found spot: " + foundSpot.getSpotId() + " Type: " + foundSpot.getType());
         } else {

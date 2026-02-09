@@ -13,16 +13,18 @@ public class Member2Test {
 
         // Scenario 1: Valid Parking
         try {
-            ParkingSpot spot1 = new ParkingSpot("L1-C1", ParkingSpotType.COMPACT);
+            // Use correct constructor: (floorNumber, row, spotNumber, type)
+            ParkingSpot spot1 = new ParkingSpot(1, "A", 1, ParkingSpotType.COMPACT);
             Ticket t1 = entryService.processEntry("MOTO-1", "Motorcycle", spot1);
             System.out.println("1. Success: " + t1.toString());
         } catch (Exception e) {
             System.out.println("1. Failed: " + e.getMessage());
         }
 
-        // Scenario 2: Invalid Type (SUV attempting to park in a NEW empty Compact spot)
+        // Scenario 2: Invalid Type (SUV attempting to park in a Compact spot)
         try {
-            ParkingSpot spot2 = new ParkingSpot("L1-C2", ParkingSpotType.COMPACT); // Empty spot
+            // Create a new compact spot for this test
+            ParkingSpot spot2 = new ParkingSpot(1, "A", 2, ParkingSpotType.COMPACT); // Compact spot
             System.out.println("\nAttempting to park SUV in Compact spot...");
             entryService.processEntry("SUV-99", "SUV", spot2);
         } catch (Exception e) {

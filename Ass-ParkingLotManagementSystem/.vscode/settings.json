@@ -1,0 +1,8 @@
+{
+    "java.project.sourcePaths": ["src/main/java", "src/test/controller"],
+    "java.project.outputPath": "bin",
+    "java.import.exclusions": ["**/bin/**"],
+    "java.import.gradle.enabled": false,
+    "java.import.maven.enabled": false,
+    "java.compile.nullAnalysis.mode": "disabled"
+}

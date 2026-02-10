@@ -23,4 +23,13 @@ public abstract class Vehicle {
     public void setExitTime(LocalDateTime exitTime) { this.exitTime = exitTime; }
     public String getParkingSpotId() { return parkingSpotId; }
     public void setParkingSpotId(String parkingSpotId) { this.parkingSpotId = parkingSpotId; }
+
+     // --------------------------
+    // New method: calculate parking hours （member3）
+    // --------------------------
+    public int calculateParkingHours() {
+        LocalDateTime exit = (exitTime != null) ? exitTime : LocalDateTime.now();
+        long minutesParked = Duration.between(entryTime, exit).toMinutes();
+        int hours = (int) Math.ceil(minutesParked / 60.0); // Round up to nearest hour
+        return Math.max(hours, 1); // Minimum 1 hour
 }

@@ -10,9 +10,9 @@ public class ParkingLotTest {
             ParkingLot parkingLot = ParkingLot.getInstance();
 
             // --------------------------
-            // 1. 模拟车辆入场
+            // 1. simulate vehicle entry
             // --------------------------
-            Vehicle car1 = new Car("ABC123"); // 假设 Car 是 Vehicle 的子类
+            Vehicle car1 = new Car("ABC123"); // assume Car is a subclass of Vehicle
             ParkingSpot spotForCar1 = parkingLot.findAvailableSpots("car").get(0);
 
             parkingLot.addParkedVehicle(car1.getLicensePlate(), car1, spotForCar1);
@@ -21,12 +21,12 @@ public class ParkingLotTest {
             System.out.println("Car " + car1.getLicensePlate() + " parked at " + spotForCar1.getSpotId());
 
             // --------------------------
-            // 2. 模拟等待一段时间 (可以用 sleep 模拟)
+            // 2. simulate some parking duration
             // --------------------------
-            // Thread.sleep(3600 * 1000); // 模拟 1 小时停车（可选）
+            // Thread.sleep(3600 * 1000); // simulate 1 hour parking
 
             // --------------------------
-            // 3. 车辆出场
+            // 3. simulate vehicle exit
             // --------------------------
             ExitService exitService = new ExitService();
             double fee = exitService.processExit(car1.getLicensePlate());
@@ -35,7 +35,7 @@ public class ParkingLotTest {
             System.out.printf("Parking fee: RM %.2f\n", fee);
 
             // --------------------------
-            // 4. 打印停车场状态
+            // 4. print parking lot status
             // --------------------------
             parkingLot.printParkingLotStatus();
 

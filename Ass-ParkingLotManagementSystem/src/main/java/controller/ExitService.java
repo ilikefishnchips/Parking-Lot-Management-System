@@ -1,42 +1,61 @@
 package main.java.controller;
 
-import main.java.model.ParkingLot;
-import main.java.model.ParkingSpot;
-import main.java.model.Vehicle;
+import main.java.model.*;
 
 public class ExitService {
 
-    public double processExit(String plateNumber) throws Exception {
+    // Process vehicle exit
+    public double processExit(String licensePlate, PaymentStrategy paymentStrategy) {
 
-        // 1. Get ParkingLot instance
         ParkingLot parkingLot = ParkingLot.getInstance();
+        Vehicle vehicle = parkingLot.getParkedVehicle(licensePlate);
 
-        // 2. Get parked vehicle
-        Vehicle vehicle = parkingLot.getParkedVehicle(plateNumber);
         if (vehicle == null) {
-            throw new Exception("Error: Vehicle with plate number " + plateNumber + " not found.");
+            System.out.println("Vehicle not found.");
+            return 0.0;
         }
 
-        // 3. Get parking spot of the vehicle
-        ParkingSpot spot = parkingLot.getAllSpots().get(vehicle.getParkingSpotId());
+        // get parking spot
+        String spotId = vehicle.getParkingSpotId();
+        ParkingSpot spot = parkingLot.getParkingSpotById(spotId);
+
         if (spot == null) {
-            throw new Exception("Error: Parking spot not found for vehicle " + plateNumber);
+            System.out.println("Parking spot not found.");
+            return 0.0;
         }
 
-        // 4. Calculate parking hours
-        int hours = vehicle.calculateParkingHours();
+        // calculate parking fee
+        double hours = vehicle.calculateParkingHours();
+        double hourlyRate = spot.getHourlyRate();
+        double totalAmount = hours * hourlyRate;
 
-        // 5. Calculate parking fee
-        double fee = spot.getHourlyRate() * hours;
+        // --------------------------
+        // process payment
+        // --------------------------
+        paymentStrategy.pay(totalAmount);
 
-        // 6. Remove vehicle and free parking spot
-        spot.removeVehicle();
-        parkingLot.removeParkedVehicle(plateNumber);
+        // record revenue
+        parkingLot.addRevenue(totalAmount);
 
-        // 7. Add to total revenue
-        parkingLot.addRevenue(fee);
+        // --------------------------
+        // print receipt
+        // --------------------------
+        Receipt receipt = new Receipt(
+                vehicle.getLicensePlate(),
+                spot.getSpotId(),
+                hours,
+                hourlyRate,
+                totalAmount,
+                paymentStrategy.getPaymentType()
+        );
 
-        // 8. Return total fee
-        return fee;
+        receipt.printReceipt();
+
+        // --------------------------
+        // release parking spot
+        // --------------------------
+        parkingLot.removeParkedVehicle(licensePlate);
+
+        return totalAmount;
     }
 }

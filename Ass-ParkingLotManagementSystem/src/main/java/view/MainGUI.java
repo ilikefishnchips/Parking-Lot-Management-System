@@ -4,15 +4,20 @@ import javax.swing.*;
 
 public class MainGUI {
     public static void main(String[] args) {
-        // Run Swing on Event Dispatch Thread
+
         SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Member 2 - Entry System Prototype");
+
+            JFrame frame = new JFrame("Parking Lot Management System");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(400, 400);
-            
-            // Add your panel to the frame
-            frame.add(new EntryPanel());
-            
+            frame.setSize(800, 600);
+
+            JTabbedPane tabs = new JTabbedPane();
+
+            tabs.addTab("Entry (Member 2)", new EntryPanel());
+            tabs.addTab("Admin (Member 4)", new AdminPanel());
+
+            frame.add(tabs);
+
             frame.setVisible(true);
         });
     }

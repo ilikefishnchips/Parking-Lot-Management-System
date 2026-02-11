@@ -8,6 +8,8 @@ public class ExitService {
     public double processExit(String licensePlate, PaymentStrategy paymentStrategy) {
 
         ParkingLot parkingLot = ParkingLot.getInstance();
+        FineService fineService = FineService.getInstance(); 
+
         Vehicle vehicle = parkingLot.getParkedVehicle(licensePlate);
 
         if (vehicle == null) {
@@ -24,18 +26,31 @@ public class ExitService {
             return 0.0;
         }
 
+        // --------------------------
         // calculate parking fee
+        // --------------------------
         double hours = vehicle.calculateParkingHours();
         double hourlyRate = spot.getHourlyRate();
-        double totalAmount = hours * hourlyRate;
+        double parkingFee = hours * hourlyRate;
+
+        // Check new fines (overstay / reserved misuse)
+        fineService.checkForNewFines(vehicle, spot);
+
+        // Get total unpaid fines (including previous + new)
+        double totalFines = fineService.getTotalUnpaid(vehicle.getLicensePlate());
+        
+        double totalAmount = parkingFee + totalFines;
 
         // --------------------------
         // process payment
         // --------------------------
         paymentStrategy.pay(totalAmount);
 
-        // record revenue
+        // record revenue (include fines too)
         parkingLot.addRevenue(totalAmount);
+
+        // mark fines as paid after successful payment
+        fineService.markFinesAsPaid(vehicle.getLicensePlate());
 
         // --------------------------
         // print receipt

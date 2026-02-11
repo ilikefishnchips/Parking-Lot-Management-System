@@ -32,4 +32,5 @@ public abstract class Vehicle {
         long minutesParked = Duration.between(entryTime, exit).toMinutes();
         int hours = (int) Math.ceil(minutesParked / 60.0); // Round up to nearest hour
         return Math.max(hours, 1); // Minimum 1 hour
+    }
 }

@@ -1,12 +1,10 @@
 package main.java.view;
 
 import java.awt.*;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-
 import main.java.controller.FineService;
 import main.java.model.*;
 
@@ -15,6 +13,9 @@ public class AdminPanel extends JPanel {
     private JTabbedPane tabbedPane;
     private ParkingLot parkingLot;
     private FineService fineService;
+    
+    // Reference to the inner panel of the Occupancy tab (so we can refresh it)
+    private JPanel occupancyPanel;
 
     public AdminPanel() {
         parkingLot = ParkingLot.getInstance();
@@ -24,7 +25,7 @@ public class AdminPanel extends JPanel {
         tabbedPane = new JTabbedPane();
 
         tabbedPane.addTab("Current Vehicles", createVehiclePanel());
-        tabbedPane.addTab("Occupancy Report", createOccupancyPanel());
+        tabbedPane.addTab("Occupancy Report", createOccupancyPanel()); // now returns JScrollPane
         tabbedPane.addTab("Revenue Report", createRevenuePanel());
         tabbedPane.addTab("Fine Management", createFinePanel());
 
@@ -44,14 +45,12 @@ public class AdminPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(table);
         panel.add(scrollPane, BorderLayout.CENTER);
 
-        // Refresh button
         JButton btnRefresh = new JButton("Refresh");
         btnRefresh.addActionListener(e -> refreshVehicleTable(model));
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topPanel.add(btnRefresh);
         panel.add(topPanel, BorderLayout.NORTH);
 
-        // Initial load
         refreshVehicleTable(model);
         return panel;
     }
@@ -79,12 +78,23 @@ public class AdminPanel extends JPanel {
     }
 
     // ─────────────────────────────────────────────────────────
-    // 2. OCCUPANCY REPORT TAB
+    // 2. OCCUPANCY REPORT TAB (FIXED)
     // ─────────────────────────────────────────────────────────
     private JScrollPane createOccupancyPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // Create the inner panel (BoxLayout Y_AXIS) and store it in the field
+        occupancyPanel = new JPanel();
+        occupancyPanel.setLayout(new BoxLayout(occupancyPanel, BoxLayout.Y_AXIS));
+        occupancyPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Populate the panel with current data
+        refreshOccupancyDisplay(occupancyPanel);
+
+        // Wrap in JScrollPane and return
+        return new JScrollPane(occupancyPanel);
+    }
+
+    private void refreshOccupancyDisplay(JPanel panel) {
+        panel.removeAll(); // clear all components
 
         // Overall occupancy
         double overall = parkingLot.getOverallOccupancy();
@@ -111,20 +121,14 @@ public class AdminPanel extends JPanel {
             panel.add(createStatPanel(entry.getKey().toString(), entry.getValue()));
         }
 
-        // Refresh button
+        // Refresh button (inside the panel)
         JButton btnRefresh = new JButton("Refresh");
-        btnRefresh.addActionListener(e -> {
-            // Simple: rebuild the whole panel
-            JScrollPane newPanel = createOccupancyPanel();
-            removeAll();
-            add(newPanel, BorderLayout.CENTER);
-            revalidate();
-            repaint();
-        });
+        btnRefresh.addActionListener(e -> refreshOccupancyDisplay(panel));
         panel.add(Box.createRigidArea(new Dimension(0, 10)));
         panel.add(btnRefresh);
 
-        return new JScrollPane(panel);
+        panel.revalidate();
+        panel.repaint();
     }
 
     private JPanel createStatPanel(String labelText, double percentage) {
@@ -152,7 +156,6 @@ public class AdminPanel extends JPanel {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Total revenue
         double total = parkingLot.getTotalRevenue();
         JPanel totalPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         totalPanel.add(new JLabel("Total Revenue: "));
@@ -163,7 +166,6 @@ public class AdminPanel extends JPanel {
 
         panel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        // Today's revenue (simple approximation – can be enhanced with a transaction log)
         JPanel todayPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         todayPanel.add(new JLabel("Today's Revenue: "));
         JLabel todayValue = new JLabel("(Detailed tracking not implemented)");
@@ -181,7 +183,6 @@ public class AdminPanel extends JPanel {
         note.setBackground(panel.getBackground());
         panel.add(note);
 
-        // Refresh button
         JButton btnRefresh = new JButton("Refresh");
         btnRefresh.addActionListener(e -> {
             totalValue.setText("RM " + String.format("%.2f", parkingLot.getTotalRevenue()));
@@ -198,7 +199,6 @@ public class AdminPanel extends JPanel {
     private JPanel createFinePanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
 
-        // Top panel for scheme selection
         JPanel topPanel = new JPanel();
         JLabel lblScheme = new JLabel("Select Fine Scheme:");
         String[] schemes = {"Fixed", "Progressive", "Hourly"};
@@ -210,12 +210,10 @@ public class AdminPanel extends JPanel {
 
         panel.add(topPanel, BorderLayout.NORTH);
 
-        // Center area to display unpaid fines
         JTextArea txtFines = new JTextArea();
         txtFines.setEditable(false);
         panel.add(new JScrollPane(txtFines), BorderLayout.CENTER);
 
-        // Apply button action
         btnApply.addActionListener(e -> {
             String selected = (String) cmbScheme.getSelectedItem();
             switch (selected) {
@@ -227,7 +225,6 @@ public class AdminPanel extends JPanel {
                     "Fine scheme changed to " + selected + " (Applied to future fines only)");
         });
 
-        // Refresh unpaid fines display
         JButton btnRefresh = new JButton("Refresh Unpaid Fines");
         topPanel.add(btnRefresh);
         btnRefresh.addActionListener(e -> {

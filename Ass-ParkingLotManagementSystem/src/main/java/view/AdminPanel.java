@@ -30,6 +30,7 @@ public class AdminPanel extends JPanel {
         tabbedPane.addTab("Occupancy Report", createOccupancyPanel()); // now returns JScrollPane
         tabbedPane.addTab("Revenue Report", createRevenuePanel());
         tabbedPane.addTab("Fine Management", createFinePanel());
+        tabbedPane.addTab("Configuration", new ConfigPanel());
 
         add(tabbedPane, BorderLayout.CENTER);
     }
@@ -261,4 +262,5 @@ private JScrollPane createRevenuePanel() {
 
         return panel;
     }
+    
 }

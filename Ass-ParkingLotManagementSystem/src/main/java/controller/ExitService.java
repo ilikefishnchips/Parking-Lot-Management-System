@@ -1,6 +1,7 @@
 package main.java.controller;
 
 import java.time.LocalDateTime;
+import main.java.data.DatabaseManager;
 import main.java.model.*;
 
 public class ExitService {
@@ -71,6 +72,9 @@ public class ExitService {
 
         // 9. Release parking spot
         parkingLot.removeParkedVehicle(licensePlate);
+        
+        // 10. Update database
+        DatabaseManager.getInstance().updateVehicleExit(licensePlate, exitTime);
 
         return totalAmount;
     }

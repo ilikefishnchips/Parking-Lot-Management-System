@@ -1,6 +1,6 @@
 @echo off
-echo Running Member 2 Test...
-cd /d "D:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem"
-javac -cp ".;src" src/test/controller/Member2Test.java -d bin
-java -cp "bin" test.controller.Member2Test
+echo Running Member 2 Test (Entry System)...
+cd /d "%~dp0"
+javac -cp ".;src;lib/mysql-connector-j-9.2.0.jar" src/test/controller/Member2Test.java -d bin
+java -cp "bin;lib/mysql-connector-j-9.2.0.jar;." test.controller.Member2Test
 pause

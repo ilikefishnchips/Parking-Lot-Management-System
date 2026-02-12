@@ -19,6 +19,7 @@ public abstract class Vehicle {
 
     public String getLicensePlate() { return licensePlate; }
     public LocalDateTime getEntryTime() { return entryTime; }
+    public void setEntryTime(LocalDateTime entryTime) { this.entryTime = entryTime; }
     
     public LocalDateTime getExitTime() { return exitTime; }
     public void setExitTime(LocalDateTime exitTime) { this.exitTime = exitTime; }

@@ -35,22 +35,21 @@ public class FineService {
 
         List<Fine> issuedFines = new ArrayList<>();
 
-        long totalHours = Duration.between(
-                vehicle.getEntryTime(),
-                LocalDateTime.now()
-        ).toHours();
-
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime limit = vehicle.getEntryTime().plusHours(24);
+        
         // --- OVERSTAY FINE ---
-        if (totalHours > 24) {
-            long overstayHours = totalHours - 24;
+        if (now.isAfter(limit)) {
+            long overstayMinutes = Duration.between(limit, now).toMinutes();
+            long overstayHours = (overstayMinutes + 59) / 60;  // ceiling rounding
             double amount = currentScheme.calculateFine(overstayHours);
 
             Fine fine = new Fine(
                     "F-" + vehicle.getLicensePlate() + "-" + System.currentTimeMillis(),
                     vehicle.getLicensePlate(),
                     amount,
-                    "Overstay",
-                    LocalDateTime.now()
+                    "Overstay (" + overstayHours + "h)",
+                    now
             );
 
             allFines.add(fine);

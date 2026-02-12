@@ -1,6 +1,9 @@
 package main.java.data;
 
 import main.java.model.Fine;
+import main.java.model.ParkingSpot;
+import main.java.model.ParkingSpotType;
+
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -10,14 +13,13 @@ public class DatabaseManager {
     private static DatabaseManager instance;
     private Connection connection;
     
-    // MySQL configuration – adjust if you changed credentials
+    // MySQL configuration
     private static final String URL = "jdbc:mysql://localhost:3306/parkinglot_db?useSSL=false&serverTimezone=UTC";
-    private static final String USER = "root";      // default XAMPP user
-    private static final String PASSWORD = "";      // default XAMPP password (empty)
+    private static final String USER = "root";
+    private static final String PASSWORD = "";
 
     private DatabaseManager() {
         try {
-            // Explicitly load driver (optional for modern JDBC)
             Class.forName("com.mysql.cj.jdbc.Driver");
             connection = DriverManager.getConnection(URL, USER, PASSWORD);
         } catch (ClassNotFoundException | SQLException e) {
@@ -122,6 +124,145 @@ public class DatabaseManager {
         return 0.0;
     }
 
-    // ---------------------- (Optional) PARKING LOT CONFIGURATION ----------------------
-    // You will add methods for floors & spots later when implementing admin config.
+    // ---------------------- FLOOR OPERATIONS ----------------------
+    public void saveFloor(int floorNumber) {
+        String sql = "INSERT IGNORE INTO floor (floor_number) VALUES (?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, floorNumber);
+            pstmt.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    public void deleteFloor(int floorNumber) {
+        String sql = "DELETE FROM floor WHERE floor_number = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, floorNumber);
+            pstmt.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    public List<Integer> getAllFloors() {
+        List<Integer> floors = new ArrayList<>();
+        String sql = "SELECT floor_number FROM floor ORDER BY floor_number";
+        try (Statement stmt = connection.createStatement();
+            ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) floors.add(rs.getInt("floor_number"));
+        } catch (SQLException e) { e.printStackTrace(); }
+        return floors;
+    }
+
+    // ---------------------- SPOT OPERATIONS ----------------------
+    public void saveParkingSpot(ParkingSpot spot) {
+        String sql = "INSERT INTO parking_spot (spot_id, floor_number, row_label, spot_number, type, hourly_rate, is_occupied, current_vehicle_plate) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?) " +
+                    "ON DUPLICATE KEY UPDATE hourly_rate = VALUES(hourly_rate), type = VALUES(type)";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, spot.getSpotId());
+            pstmt.setInt(2, spot.getFloorNumber());
+            pstmt.setString(3, spot.getRow());
+            pstmt.setInt(4, spot.getSpotNumber());
+            pstmt.setString(5, spot.getType().name());
+            pstmt.setDouble(6, spot.getHourlyRate());
+            pstmt.setBoolean(7, spot.isOccupied());
+            pstmt.setString(8, spot.getCurrentVehicle() != null ? spot.getCurrentVehicle().getLicensePlate() : null);
+            pstmt.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    public void updateSpotOccupancy(String spotId, boolean occupied, String vehiclePlate) {
+        String sql = "UPDATE parking_spot SET is_occupied = ?, current_vehicle_plate = ? WHERE spot_id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setBoolean(1, occupied);
+            pstmt.setString(2, occupied ? vehiclePlate : null);
+            pstmt.setString(3, spotId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void deleteParkingSpot(String spotId) {
+        String sql = "DELETE FROM parking_spot WHERE spot_id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, spotId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    public List<ParkingSpot> loadAllSpots() {
+        List<ParkingSpot> spots = new ArrayList<>();
+        String sql = "SELECT * FROM parking_spot";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                ParkingSpotType type = ParkingSpotType.valueOf(rs.getString("type"));
+                ParkingSpot spot = new ParkingSpot(
+                    rs.getInt("floor_number"),
+                    rs.getString("row_label"),
+                    rs.getInt("spot_number"),
+                    type
+                );
+                spot.setHourlyRate(rs.getDouble("hourly_rate"));
+                if (rs.getBoolean("is_occupied")) {
+                    spot.setOccupied(true);
+                }
+                spots.add(spot);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return spots;
+    }
+
+    // ---------------------- VEHICLE ENTRY OPERATIONS ----------------------
+    public void saveVehicleEntry(String licensePlate, String vehicleType, LocalDateTime entryTime, String spotId) {
+        String sql = "INSERT INTO vehicle_entry (license_plate, vehicle_type, entry_time, spot_id) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, licensePlate);
+            pstmt.setString(2, vehicleType);
+            pstmt.setTimestamp(3, Timestamp.valueOf(entryTime));
+            pstmt.setString(4, spotId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    public void updateVehicleExit(String licensePlate, LocalDateTime exitTime) {
+        String sql = "UPDATE vehicle_entry SET exit_time = ? WHERE license_plate = ? AND exit_time IS NULL";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setTimestamp(1, Timestamp.valueOf(exitTime));
+            pstmt.setString(2, licensePlate);
+            pstmt.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    public List<VehicleEntryRecord> loadActiveVehicleEntries() {
+        List<VehicleEntryRecord> records = new ArrayList<>();
+        String sql = "SELECT * FROM vehicle_entry WHERE exit_time IS NULL";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                VehicleEntryRecord rec = new VehicleEntryRecord(
+                    rs.getString("license_plate"),
+                    rs.getString("vehicle_type"),
+                    rs.getTimestamp("entry_time").toLocalDateTime(),
+                    rs.getString("spot_id")
+                );
+                records.add(rec);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return records;
+    }
+
+    // Helper class for vehicle entry records
+    public static class VehicleEntryRecord {
+        public final String licensePlate;
+        public final String vehicleType;
+        public final LocalDateTime entryTime;
+        public final String spotId;
+
+        public VehicleEntryRecord(String lp, String vt, LocalDateTime et, String sid) {
+            this.licensePlate = lp;
+            this.vehicleType = vt;
+            this.entryTime = et;
+            this.spotId = sid;
+        }
+    }
 }

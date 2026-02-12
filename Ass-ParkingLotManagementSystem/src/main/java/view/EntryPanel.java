@@ -99,6 +99,7 @@ public class EntryPanel extends JPanel {
             // 3. Update UI on Success
             txtReceipt.setText(">>> TICKET GENERATED <<<\n\n");
             txtReceipt.append(ticket.toString());
+            loadRealSpots(); 
             
             // Refresh the spot text to show it's now occupied
             cmbSpots.repaint(); 

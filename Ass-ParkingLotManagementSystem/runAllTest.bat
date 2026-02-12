@@ -17,7 +17,7 @@ echo ✅ Compilation successful!
 
 echo.
 echo 2. Running Member 1 Test (Parking Lot Structure)...
-java -cp "bin;." test.controller.Member1Test
+java -cp "bin;lib/mysql-connector-j-9.2.0.jar;." test.controller.Member1Test
 if %errorlevel% neq 0 (
     echo ❌ Member 1 Test failed!
     pause
@@ -26,7 +26,7 @@ if %errorlevel% neq 0 (
 
 echo.
 echo 3. Running Member 2 Test (Entry System)...
-java -cp "bin;." test.controller.Member2Test
+java -cp "bin;lib/mysql-connector-j-9.2.0.jar;." test.controller.Member2Test
 if %errorlevel% neq 0 (
     echo ❌ Member 2 Test failed!
     pause

@@ -26,6 +26,7 @@ d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\
 d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\java\view\AdminPanel.java
 d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\java\view\EntryPanel.java
 d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\java\view\ExitPanel.java
+d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\java\view\ConfigPanel.java
 d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\java\view\MainGUI.java
 d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\java\Main.java
 d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\test\controller\Member1Test.java

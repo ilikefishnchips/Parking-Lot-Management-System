@@ -17,6 +17,18 @@ public class Receipt {
     private String paymentType;
     private LocalDateTime paymentTime;
 
+    public String getLicensePlate() { return licensePlate; }
+    public String getSpotId() { return spotId; }
+    public LocalDateTime getEntryTime() { return entryTime; }
+    public LocalDateTime getExitTime() { return exitTime; }
+    public long getHours() { return hours; }
+    public double getHourlyRate() { return hourlyRate; }
+    public double getParkingFee() { return parkingFee; }
+    public double getFines() { return fines; }
+    public double getTotalAmount() { return totalAmount; }
+    public String getPaymentType() { return paymentType; }
+    public LocalDateTime getPaymentTime() { return paymentTime; }
+
     public Receipt(String licensePlate,
                    String spotId,
                    LocalDateTime entryTime,
@@ -57,4 +69,5 @@ public class Receipt {
         System.out.println("Payment Time   : " + paymentTime.format(dtf));
         System.out.println("===========================================\n");
     }
+
 }

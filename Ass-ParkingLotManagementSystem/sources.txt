@@ -2,6 +2,7 @@ d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\
 d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\java\controller\VehicleFactory.java
 d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\java\controller\ExitService.java
 d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\java\controller\FineService.java
+d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\java\data\DatabaseManager.java
 d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\java\model\Car.java
 d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\java\model\CardPayment.java
 d:\GitHub\Parking-Lot-Management-System\Ass-ParkingLotManagementSystem\src\main\java\model\CashPayment.java

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import main.java.data.DatabaseManager;
 
 public class ParkingLot {
     // Singleton instance
@@ -189,11 +190,11 @@ public class ParkingLot {
     
     // Revenue management (will be called by Member 3)
     public void addRevenue(double amount) {
-        this.totalRevenue += amount;
+        DatabaseManager.getInstance().addRevenue(amount, "Parking fee + fines");
     }
     
     public double getTotalRevenue() {
-        return totalRevenue;
+        return DatabaseManager.getInstance().getTotalRevenue();
     }
     
     // Getters

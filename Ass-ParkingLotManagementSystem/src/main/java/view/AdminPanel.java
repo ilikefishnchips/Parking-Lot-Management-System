@@ -6,7 +6,9 @@ import java.util.Map;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import main.java.controller.FineService;
+import main.java.data.DatabaseManager;
 import main.java.model.*;
+
 
 public class AdminPanel extends JPanel {
 
@@ -148,50 +150,59 @@ public class AdminPanel extends JPanel {
         return panel;
     }
 
-    // ─────────────────────────────────────────────────────────
-    // 3. REVENUE REPORT TAB
-    // ─────────────────────────────────────────────────────────
-    private JScrollPane createRevenuePanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+// ─────────────────────────────────────────────────────────
+// 3. REVENUE REPORT TAB (with TODAY'S REVENUE from DB)
+// ─────────────────────────────────────────────────────────
+private JScrollPane createRevenuePanel() {
+    JPanel panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+    panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        double total = parkingLot.getTotalRevenue();
-        JPanel totalPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        totalPanel.add(new JLabel("Total Revenue: "));
-        JLabel totalValue = new JLabel("RM " + String.format("%.2f", total));
-        totalValue.setFont(new Font("SansSerif", Font.BOLD, 16));
-        totalPanel.add(totalValue);
-        panel.add(totalPanel);
+    // ----- TOTAL REVENUE -----
+    double total = parkingLot.getTotalRevenue();
+    JPanel totalPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+    totalPanel.add(new JLabel("Total Revenue: "));
+    JLabel totalValue = new JLabel("RM " + String.format("%.2f", total));
+    totalValue.setFont(new Font("SansSerif", Font.BOLD, 16));
+    totalPanel.add(totalValue);
+    panel.add(totalPanel);
 
-        panel.add(Box.createRigidArea(new Dimension(0, 20)));
+    panel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        JPanel todayPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        todayPanel.add(new JLabel("Today's Revenue: "));
-        JLabel todayValue = new JLabel("(Detailed tracking not implemented)");
-        todayValue.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        todayPanel.add(todayValue);
-        panel.add(todayPanel);
+    // ----- TODAY'S REVENUE (from database) -----
+    double today = DatabaseManager.getInstance().getTodayRevenue();
+    JPanel todayPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+    todayPanel.add(new JLabel("Today's Revenue: "));
+    JLabel todayValue = new JLabel("RM " + String.format("%.2f", today));
+    todayValue.setFont(new Font("SansSerif", Font.PLAIN, 14));
+    todayPanel.add(todayValue);
+    panel.add(todayPanel);
 
-        panel.add(Box.createRigidArea(new Dimension(0, 20)));
+    panel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        JTextArea note = new JTextArea(
-                "Note: Total revenue includes all parking fees and fines collected.\n" +
-                "Transaction history can be added in future versions."
-        );
-        note.setEditable(false);
-        note.setBackground(panel.getBackground());
-        panel.add(note);
+    // ----- NOTE (optional) -----
+    JTextArea note = new JTextArea(
+            "Note: Total revenue includes all parking fees and fines collected.\n" +
+            "Today's revenue is retrieved from the database."
+    );
+    note.setEditable(false);
+    note.setBackground(panel.getBackground());
+    panel.add(note);
 
-        JButton btnRefresh = new JButton("Refresh");
-        btnRefresh.addActionListener(e -> {
-            totalValue.setText("RM " + String.format("%.2f", parkingLot.getTotalRevenue()));
-        });
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(btnRefresh);
+    // ----- REFRESH BUTTON (updates both) -----
+    JButton btnRefresh = new JButton("Refresh");
+    btnRefresh.addActionListener(e -> {
+        // Update total revenue
+        totalValue.setText("RM " + String.format("%.2f", parkingLot.getTotalRevenue()));
+        // Update today's revenue
+        double refreshedToday = DatabaseManager.getInstance().getTodayRevenue();
+        todayValue.setText("RM " + String.format("%.2f", refreshedToday));
+    });
+    panel.add(Box.createRigidArea(new Dimension(0, 10)));
+    panel.add(btnRefresh);
 
-        return new JScrollPane(panel);
-    }
+    return new JScrollPane(panel);
+}
 
     // ─────────────────────────────────────────────────────────
     // 4. FINE MANAGEMENT TAB

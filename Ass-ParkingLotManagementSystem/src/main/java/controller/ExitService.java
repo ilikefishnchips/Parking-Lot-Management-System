@@ -29,6 +29,13 @@ public class ExitService {
         // 3. Calculate parking fee (now uses the stored exit time)
         long hours = vehicle.calculateParkingHours();
         double hourlyRate = spot.getHourlyRate();
+
+        // --- NEW: Handicapped discount ---
+        if (vehicle instanceof HandicappedVehicle && spot.getType() == ParkingSpotType.HANDICAPPED) {
+            hourlyRate = 0.0;
+        }
+        // --------------------------------
+        
         double parkingFee = hours * hourlyRate;
 
         // 4. Check and collect fines

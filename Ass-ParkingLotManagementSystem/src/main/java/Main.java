@@ -1,7 +1,7 @@
 package main.java;
 
-import main.java.model.*;
 import main.java.controller.ExitService;
+import main.java.model.*;
 
 public class Main {
 
@@ -9,12 +9,14 @@ public class Main {
 
         ParkingLot parkingLot = ParkingLot.getInstance();
 
-        ParkingSpot spot1 = new ParkingSpot("A1", 5.0);
+        // Create a parking spot (floor 1, row A, spot 1, REGULAR type)
+        ParkingSpot spot1 = new ParkingSpot(1, "A", 1, ParkingSpotType.REGULAR);
 
-        Vehicle vehicle1 = new Vehicle("ABC1234");
-        vehicle1.assignSpot(spot1);
+        // Create a concrete vehicle (Car)
+        Vehicle vehicle1 = new Car("ABC1234");
+        vehicle1.setParkingSpotId(spot1.getSpotId());
 
-        parkingLot.parkVehicle(vehicle1);
+        parkingLot.addParkedVehicle("ABC1234", vehicle1, spot1);
 
         // Simulate parking time
         Thread.sleep(3000);

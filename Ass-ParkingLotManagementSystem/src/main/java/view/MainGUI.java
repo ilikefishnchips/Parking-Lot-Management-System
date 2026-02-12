@@ -14,6 +14,7 @@ public class MainGUI {
             JTabbedPane tabs = new JTabbedPane();
 
             tabs.addTab("Entry (Member 2)", new EntryPanel());
+            tabs.addTab("Exit (Member 3)", new ExitPanel());
             tabs.addTab("Admin (Member 4)", new AdminPanel());
 
             frame.add(tabs);

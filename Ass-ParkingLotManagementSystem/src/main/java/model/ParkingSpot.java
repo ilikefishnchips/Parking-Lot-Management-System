@@ -65,4 +65,9 @@ public class ParkingSpot {
         this.currentVehicle = null;
         this.isOccupied = false;
     }
+
+        // Add this getter method
+    public Vehicle getCurrentVehicle() {
+        return currentVehicle;
+    }
 }

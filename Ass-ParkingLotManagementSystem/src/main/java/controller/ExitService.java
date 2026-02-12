@@ -1,74 +1,68 @@
 package main.java.controller;
 
+import java.time.LocalDateTime;
 import main.java.model.*;
 
 public class ExitService {
 
-    // Process vehicle exit
     public double processExit(String licensePlate, PaymentStrategy paymentStrategy) {
 
         ParkingLot parkingLot = ParkingLot.getInstance();
-        FineService fineService = FineService.getInstance(); 
+        FineService fineService = FineService.getInstance();
 
         Vehicle vehicle = parkingLot.getParkedVehicle(licensePlate);
-
         if (vehicle == null) {
-            System.out.println("Vehicle not found.");
-            return 0.0;
+            throw new IllegalArgumentException("Vehicle not found: " + licensePlate);
         }
 
-        // get parking spot
+        // ✅ 1. Set exit time immediately
+        LocalDateTime exitTime = LocalDateTime.now();
+        vehicle.setExitTime(exitTime);
+
+        // 2. Get parking spot
         String spotId = vehicle.getParkingSpotId();
         ParkingSpot spot = parkingLot.getParkingSpotById(spotId);
-
         if (spot == null) {
-            System.out.println("Parking spot not found.");
-            return 0.0;
+            throw new IllegalStateException("Parking spot not found for vehicle: " + licensePlate);
         }
 
-        // --------------------------
-        // calculate parking fee
-        // --------------------------
-        double hours = vehicle.calculateParkingHours();
+        // 3. Calculate parking fee (now uses the stored exit time)
+        long hours = vehicle.calculateParkingHours();
         double hourlyRate = spot.getHourlyRate();
         double parkingFee = hours * hourlyRate;
 
-        // Check new fines (overstay / reserved misuse)
+        // 4. Check and collect fines
         fineService.checkForNewFines(vehicle, spot);
-
-        // Get total unpaid fines (including previous + new)
         double totalFines = fineService.getTotalUnpaid(vehicle.getLicensePlate());
-        
+
+        // 5. Total amount due
         double totalAmount = parkingFee + totalFines;
 
-        // --------------------------
-        // process payment
-        // --------------------------
+        // 6. Process payment
         paymentStrategy.pay(totalAmount);
-
-        // record revenue (include fines too)
         parkingLot.addRevenue(totalAmount);
 
-        // mark fines as paid after successful payment
-        fineService.markFinesAsPaid(vehicle.getLicensePlate());
+        // 7. Mark fines as paid
+        if (totalFines > 0) {
+            fineService.markFinesAsPaid(vehicle.getLicensePlate());
+        }
 
-        // --------------------------
-        // print receipt
-        // --------------------------
+        // 8. Generate and print receipt (enhanced version)
         Receipt receipt = new Receipt(
                 vehicle.getLicensePlate(),
                 spot.getSpotId(),
+                vehicle.getEntryTime(),
+                vehicle.getExitTime(),      // now set
                 hours,
                 hourlyRate,
+                parkingFee,
+                totalFines,
                 totalAmount,
                 paymentStrategy.getPaymentType()
         );
-
         receipt.printReceipt();
 
-        // --------------------------
-        // release parking spot
-        // --------------------------
+        // 9. Release parking spot
         parkingLot.removeParkedVehicle(licensePlate);
 
         return totalAmount;

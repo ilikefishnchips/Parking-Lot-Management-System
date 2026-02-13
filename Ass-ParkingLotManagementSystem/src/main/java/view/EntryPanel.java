@@ -1,19 +1,14 @@
 package main.java.view;
 
-import javax.swing.*;
-
-
-import main.java.controller.EntryService;
-import main.java.model.ParkingLot;
-import main.java.model.ParkingSpot;
-import main.java.model.ParkingSpotType;
-import main.java.model.Ticket;
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
 import java.util.List;
+import javax.swing.*;
+import main.java.controller.EntryService;
+import main.java.model.ParkingLot;
+import main.java.model.ParkingSpot;
+import main.java.model.Ticket;
 
 public class EntryPanel extends JPanel {
     
@@ -24,26 +19,37 @@ public class EntryPanel extends JPanel {
     private JTextArea txtReceipt;
     private JButton btnPark;
 
+    // EntryService
     // Logic Controller
+    // Holds a reference to the controller. This allows the EntryPanel to delegate the parking logic to the EntryService, keeping the UI code clean and focused on presentation.
     private EntryService entryService;
 
+    //Setting up the Entry Panel UI
     public EntryPanel() {
+        
+        // EntryService
+        // Creates the controller that handles entry logic. Separates UI from business rules.
         this.entryService = new EntryService();
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // --- TOP PANEL: Inputs ---
         JPanel inputPanel = new JPanel(new GridLayout(4, 2, 5, 5));
-        
+
+        // License Plate:(Input)
         inputPanel.add(new JLabel("License Plate:"));
+        // User input; no validation yet (accepts any string).
         txtPlate = new JTextField();
         inputPanel.add(txtPlate);
 
+        // Vehicle Type:(Dropdown)
+        // Hard‑coded list – matches the four vehicle types the system supports. Easy to extend later.
         inputPanel.add(new JLabel("Vehicle Type:"));
         String[] types = {"Motorcycle", "Car", "SUV", "Handicapped"};
         cmbVehicleType = new JComboBox<>(types);
         inputPanel.add(cmbVehicleType);
 
+        // Parking Spot:(Dropdown)
         inputPanel.add(new JLabel("Select Spot:"));
         cmbSpots = new JComboBox<>();
         inputPanel.add(cmbSpots);
@@ -62,28 +68,44 @@ public class EntryPanel extends JPanel {
         add(new JScrollPane(txtReceipt), BorderLayout.CENTER);
 
         // --- ACTION LISTENER (The Brains) ---
+
+        // Attaches a listener to the “Generate Ticket” button.
+        // When the user clicks the button, the actionPerformed method is automatically triggered.
+        // That method simply calls handleParkButton(), which contains all the logic for:
+            // Reading the license plate, vehicle type, and selected spot.
+            // Validating inputs.
+            // Calling the EntryService to process the parking.
+            // Displaying the ticket or showing an error.
         btnPark.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 handleParkButton();
             }
         });
+
+        // Listens for changes to the selected vehicle type in the dropdown.
+        // Every time the user picks a different vehicle (e.g., switches from “Motorcycle” to “Car”), the actionPerformed method fires.
+        // It calls loadRealSpots(), which:
+            // Queries the ParkingLot for spots that are free and compatible with the newly selected vehicle type.
+            // Refreshes the spot dropdown with those spots.
         cmbVehicleType.addActionListener(new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
             loadRealSpots();
             }
         });
-         // Load spots initially
-        loadRealSpots();
+        // Runs once, right after the panel is created and all components are set up.
+        // Calls loadRealSpots() to populate the spot dropdown for the default vehicle type (the first item in the combo box, which is “Motorcycle”).
+         loadRealSpots();
     }
 
+    // EntryService
     private void handleParkButton() {
         try {
             // 1. Get Input
             String plate = txtPlate.getText().trim();
             String type = (String) cmbVehicleType.getSelectedItem();
-            
+
             // Get the actual ParkingSpot object from the dropdown wrapper
             ParkingSpotWrapper selectedWrapper = (ParkingSpotWrapper) cmbSpots.getSelectedItem();
             ParkingSpot spot = selectedWrapper.spot;
@@ -112,13 +134,13 @@ public class EntryPanel extends JPanel {
 
 
     private void loadRealSpots() {
-        // Clear existing items
+        // Clears previous list. Fresh start every time.
         cmbSpots.removeAllItems();
         
         // Get selected vehicle type
         String vehicleType = (String) cmbVehicleType.getSelectedItem();
         
-        // Get available spots from ParkingLot
+        // Get available spots from ParkingLot.java
         ParkingLot parkingLot = ParkingLot.getInstance();
         List<ParkingSpot> availableSpots = parkingLot.findAvailableSpots(vehicleType);
         

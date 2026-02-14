@@ -209,7 +209,9 @@ public class ParkingLot {
             
             // Restore vehicle to spot
             ParkingSpot spot = allSpots.get(entry.spotId);
-            if (spot != null && !spot.isOccupied()) {
+            if (spot != null) {
+                // Always assign the vehicle to restore it, regardless of current occupied status
+                // This is needed because loadAllSpots() may have set isOccupied from DB
                 spot.assignVehicle(vehicle);
                 parkedVehicles.put(entry.licensePlate, vehicle);
                 System.out.println("Restored vehicle: " + entry.licensePlate + " at spot " + entry.spotId);

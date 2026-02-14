@@ -36,17 +36,17 @@ public class ConfigPanel extends JPanel {
         JButton btnAddFloor = new JButton("Add Floor");
         JButton btnDeleteFloor = new JButton("Delete Floor");
         JButton btnRefreshFloors = new JButton("Refresh");
-        JButton btnResetToDefault = new JButton("Reset to Default");
+        // JButton btnResetToDefault = new JButton("Reset to Default");
         
         btnAddFloor.addActionListener(e -> addFloor());
         btnDeleteFloor.addActionListener(e -> deleteFloor());
         btnRefreshFloors.addActionListener(e -> refreshFloorList());
-        btnResetToDefault.addActionListener(e -> resetToDefault());
+        // btnResetToDefault.addActionListener(e -> resetToDefault());
         
         floorButtonPanel.add(btnAddFloor);
         floorButtonPanel.add(btnDeleteFloor);
         floorButtonPanel.add(btnRefreshFloors);
-        floorButtonPanel.add(btnResetToDefault);
+        // floorButtonPanel.add(btnResetToDefault);
         leftPanel.add(floorButtonPanel, BorderLayout.SOUTH);
         
         add(leftPanel, BorderLayout.WEST);

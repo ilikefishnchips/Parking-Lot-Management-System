@@ -33,7 +33,8 @@ public class ParkingLotTest {
 
             double fee = exitService.processExit(
                     car1.getLicensePlate(),
-                    paymentMethod
+                    paymentMethod,
+                    true
             );
 
             System.out.println("Car " + car1.getLicensePlate() + " exited.");

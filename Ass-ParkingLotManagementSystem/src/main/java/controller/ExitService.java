@@ -6,7 +6,7 @@ import main.java.model.*;
 
 public class ExitService {
 
-    public double processExit(String licensePlate, PaymentStrategy paymentStrategy) {
+    public double processExit(String licensePlate, PaymentStrategy paymentStrategy, boolean payFines) {
 
         ParkingLot parkingLot = ParkingLot.getInstance();
         FineService fineService = FineService.getInstance();
@@ -29,29 +29,23 @@ public class ExitService {
 
         // 3. Calculate parking fee (now uses the stored exit time)
         long hours = vehicle.calculateParkingHours();
-        double hourlyRate = spot.getHourlyRate();
+        double hourlyRate = vehicle.getEffectiveHourlyRate(spot);
 
-        // --- NEW: Handicapped discount ---
-        if (vehicle instanceof HandicappedVehicle && spot.getType() == ParkingSpotType.HANDICAPPED) {
-            hourlyRate = 0.0;
-        }
-        // --------------------------------
-        
         double parkingFee = hours * hourlyRate;
 
         // 4. Check and collect fines
         fineService.checkForNewFines(vehicle, spot);
         double totalFines = fineService.getTotalUnpaid(vehicle.getLicensePlate());
 
-        // 5. Total amount due
-        double totalAmount = parkingFee + totalFines;
+        // 5. Total amount due (only include fines if payFines is true)
+        double totalAmount = parkingFee + (payFines ? totalFines : 0.0);
 
         // 6. Process payment
         paymentStrategy.pay(totalAmount);
         parkingLot.addRevenue(totalAmount);
 
-        // 7. Mark fines as paid
-        if (totalFines > 0) {
+        // 7. Mark fines as paid only if user chose to pay them
+        if (payFines && totalFines > 0) {
             fineService.markFinesAsPaid(vehicle.getLicensePlate());
         }
 
@@ -64,7 +58,7 @@ public class ExitService {
                 hours,
                 hourlyRate,
                 parkingFee,
-                totalFines,
+                payFines ? totalFines : 0.0,
                 totalAmount,
                 paymentStrategy.getPaymentType()
         );

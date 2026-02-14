@@ -31,6 +31,7 @@ public class AdminPanel extends JPanel {
         tabbedPane.addTab("Revenue Report", createRevenuePanel());
         tabbedPane.addTab("Fine Management", createFinePanel());
         tabbedPane.addTab("Configuration", new ConfigPanel());
+        tabbedPane.addTab("All Spots", createAllSpotsPanel());
 
         add(tabbedPane, BorderLayout.CENTER);
     }
@@ -49,7 +50,10 @@ public class AdminPanel extends JPanel {
         panel.add(scrollPane, BorderLayout.CENTER);
 
         JButton btnRefresh = new JButton("Refresh");
-        btnRefresh.addActionListener(e -> refreshVehicleTable(model));
+        btnRefresh.addActionListener(e -> {
+            ParkingLot.getInstance().reloadFromDatabase();
+            refreshVehicleTable(model);
+        });
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topPanel.add(btnRefresh);
         panel.add(topPanel, BorderLayout.NORTH);
@@ -126,7 +130,10 @@ public class AdminPanel extends JPanel {
 
         // Refresh button (inside the panel)
         JButton btnRefresh = new JButton("Refresh");
-        btnRefresh.addActionListener(e -> refreshOccupancyDisplay(panel));
+        btnRefresh.addActionListener(e -> {
+            parkingLot.reloadFromDatabase();
+            refreshOccupancyDisplay(panel);
+        });
         panel.add(Box.createRigidArea(new Dimension(0, 10)));
         panel.add(btnRefresh);
 
@@ -261,6 +268,56 @@ private JScrollPane createRevenuePanel() {
         });
 
         return panel;
+    }
+    
+    // ─────────────────────────────────────────────────────────
+    // 5. ALL SPOTS TAB
+    // ─────────────────────────────────────────────────────────
+    private JPanel createAllSpotsPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        String[] columns = {"Spot ID", "Floor", "Row", "Spot#", "Type", "Hourly Rate", "Status", "Vehicle Plate", "Entry Time"};
+        DefaultTableModel model = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        JTable table = new JTable(model);
+        table.setFillsViewportHeight(true);
+        JScrollPane scrollPane = new JScrollPane(table);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        JButton btnRefresh = new JButton("Refresh");
+        btnRefresh.addActionListener(e -> {
+            ParkingLot.getInstance().reloadFromDatabase();
+            refreshAllSpotsTable(model);
+        });
+        panel.add(btnRefresh, BorderLayout.NORTH);
+
+        refreshAllSpotsTable(model);
+        return panel;
+    }
+
+    private void refreshAllSpotsTable(DefaultTableModel model) {
+        model.setRowCount(0);
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        for (ParkingSpot spot : ParkingLot.getInstance().getAllSpots().values()) {
+            String vehiclePlate = "";
+            String entryTime = "";
+            if (spot.isOccupied() && spot.getCurrentVehicle() != null) {
+                vehiclePlate = spot.getCurrentVehicle().getLicensePlate();
+                entryTime = spot.getCurrentVehicle().getEntryTime().format(dtf);
+            }
+            model.addRow(new Object[]{
+                spot.getSpotId(),
+                spot.getFloorNumber(),
+                spot.getRow(),
+                spot.getSpotNumber(),
+                spot.getType(),
+                String.format("RM %.2f", spot.getHourlyRate()),
+                spot.isOccupied() ? "OCCUPIED" : "FREE",
+                vehiclePlate,
+                entryTime
+            });
+        }
     }
     
 }

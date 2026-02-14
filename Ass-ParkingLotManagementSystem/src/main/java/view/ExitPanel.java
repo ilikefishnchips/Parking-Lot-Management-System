@@ -14,6 +14,7 @@ public class ExitPanel extends JPanel {
     private ButtonGroup paymentGroup;
     private JTextArea txtReceipt;
     private JButton btnCalculate, btnPay;
+    private JCheckBox chkPayFines;
 
     private ExitService exitService;
     private FineService fineService;
@@ -65,6 +66,10 @@ public class ExitPanel extends JPanel {
         inputPanel.add(new JLabel("")); // spacer
         inputPanel.add(buttonPanel);
 
+        inputPanel.add(new JLabel(""));
+        chkPayFines = new JCheckBox("Pay fines now", true);
+        inputPanel.add(chkPayFines);
+
         add(inputPanel, BorderLayout.NORTH);
 
         // CENTER: Receipt / Bill Display
@@ -102,13 +107,7 @@ public class ExitPanel extends JPanel {
             // 2. Calculate hours and fees
             currentVehicle.setExitTime(LocalDateTime.now()); // temporary for calculation
             hours = currentVehicle.calculateParkingHours();
-            hourlyRate = currentSpot.getHourlyRate();
-
-            // --- Handicapped discount (must be applied) ---
-            if (currentVehicle instanceof HandicappedVehicle && currentSpot.getType() == ParkingSpotType.HANDICAPPED) {
-                hourlyRate = 0.0;
-            }
-            // -----------------------------------------------
+            hourlyRate = currentVehicle.getEffectiveHourlyRate(currentSpot);
 
             parkingFee = hours * hourlyRate;
 
@@ -156,12 +155,18 @@ public class ExitPanel extends JPanel {
         else if (rbCard.isSelected()) payment = new CardPayment();
         else payment = new EWalletPayment();
 
-        try {
-            // Process exit using the already calculated values
-            ParkingLot parkingLot = ParkingLot.getInstance();
-            double paid = exitService.processExit(currentVehicle.getLicensePlate(), payment);
+        boolean payFines = chkPayFines.isSelected();
 
-            // Generate and display full receipt (using Receipt class)
+        try {
+            // Process exit with payFines flag
+            double paid = exitService.processExit(currentVehicle.getLicensePlate(), payment, payFines);
+
+            // Calculate amounts for display
+            double parkingFeePaid = parkingFee;
+            double finesPaid = payFines ? totalFines : 0.0;
+            double totalPaid = parkingFeePaid + finesPaid;
+
+            // Generate receipt (using Receipt class)
             Receipt receipt = new Receipt(
                     currentVehicle.getLicensePlate(),
                     currentSpot.getSpotId(),
@@ -169,18 +174,22 @@ public class ExitPanel extends JPanel {
                     currentVehicle.getExitTime(),
                     hours,
                     hourlyRate,
-                    parkingFee,
-                    totalFines,
-                    paid,
+                    parkingFeePaid,
+                    finesPaid,
+                    totalPaid,
                     payment.getPaymentType()
             );
 
-            txtReceipt.setText(">>> PAYMENT SUCCESSFUL <<<\n\n");
+            txtReceipt.setText(">>> EXIT PROCESSED <<<\n\n");
+            if (!payFines && totalFines > 0) {
+                txtReceipt.append("NOTE: Fines were NOT paid. They remain outstanding for next visit.\n\n");
+            }
             txtReceipt.append(receiptToString(receipt));
 
             // Reset UI for next exit
             txtLicensePlate.setText("");
             btnPay.setEnabled(false);
+            chkPayFines.setSelected(true);
             currentVehicle = null;
             currentSpot = null;
 

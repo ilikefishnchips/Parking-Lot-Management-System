@@ -30,6 +30,14 @@ public class ParkingLot {
         }
         return instance;
     }
+
+    // Reload parking lot data from database
+    public void reloadFromDatabase() {
+        this.floors.clear();
+        this.allSpots.clear();
+        this.parkedVehicles.clear();
+        initializeParkingLot();
+    }
     
     // Initialize parking lot from database
     private void initializeParkingLot() {

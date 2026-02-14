@@ -181,6 +181,74 @@ public class DatabaseManager {
         }
     }
 
+    // Reset all parking spots to default
+    public void resetParkingSpotsToDefault() {
+        // Delete all existing spots
+        String deleteSql = "DELETE FROM parking_spot";
+        try (Statement stmt = connection.createStatement()) {
+            stmt.executeUpdate(deleteSql);
+        } catch (SQLException e) { e.printStackTrace(); }
+
+        // Default spots: 7 spots per floor (A, B, C rows + 1 HANDICAPPED)
+        // Floor 1-5: A1, A4 (COMPACT, REGULAR), B2, B5, C3, C6 (COMPACT, REGULAR), H7 (HANDICAPPED)
+        String[][] defaultSpots = {
+            {"F1-RA-S1", "1", "A", "1", "COMPACT", "2.00"},
+            {"F1-RA-S4", "1", "A", "4", "REGULAR", "5.00"},
+            {"F1-RB-S2", "1", "B", "2", "COMPACT", "2.00"},
+            {"F1-RB-S5", "1", "B", "5", "REGULAR", "5.00"},
+            {"F1-RC-S3", "1", "C", "3", "COMPACT", "2.00"},
+            {"F1-RC-S6", "1", "C", "6", "REGULAR", "5.00"},
+            {"F1-RH-S7", "1", "H", "7", "HANDICAPPED", "2.00"},
+            {"F2-RA-S1", "2", "A", "1", "COMPACT", "2.00"},
+            {"F2-RA-S4", "2", "A", "4", "REGULAR", "5.00"},
+            {"F2-RB-S2", "2", "B", "2", "COMPACT", "2.00"},
+            {"F2-RB-S5", "2", "B", "5", "REGULAR", "5.00"},
+            {"F2-RC-S3", "2", "C", "3", "COMPACT", "2.00"},
+            {"F2-RC-S6", "2", "C", "6", "REGULAR", "5.00"},
+            {"F2-RH-S7", "2", "H", "7", "HANDICAPPED", "2.00"},
+            {"F3-RA-S1", "3", "A", "1", "COMPACT", "2.00"},
+            {"F3-RA-S4", "3", "A", "4", "REGULAR", "5.00"},
+            {"F3-RB-S2", "3", "B", "2", "COMPACT", "2.00"},
+            {"F3-RB-S5", "3", "B", "5", "REGULAR", "5.00"},
+            {"F3-RC-S3", "3", "C", "3", "COMPACT", "2.00"},
+            {"F3-RC-S6", "3", "C", "6", "REGULAR", "5.00"},
+            {"F3-RH-S7", "3", "H", "7", "HANDICAPPED", "2.00"},
+            {"F4-RA-S1", "4", "A", "1", "COMPACT", "2.00"},
+            {"F4-RA-S4", "4", "A", "4", "REGULAR", "5.00"},
+            {"F4-RB-S2", "4", "B", "2", "COMPACT", "2.00"},
+            {"F4-RB-S5", "4", "B", "5", "REGULAR", "5.00"},
+            {"F4-RC-S3", "4", "C", "3", "COMPACT", "2.00"},
+            {"F4-RC-S6", "4", "C", "6", "REGULAR", "5.00"},
+            {"F4-RH-S7", "4", "H", "7", "HANDICAPPED", "2.00"},
+            {"F5-RA-S1", "5", "A", "1", "COMPACT", "2.00"},
+            {"F5-RA-S4", "5", "A", "4", "REGULAR", "5.00"},
+            {"F5-RB-S2", "5", "B", "2", "COMPACT", "2.00"},
+            {"F5-RB-S5", "5", "B", "5", "REGULAR", "5.00"},
+            {"F5-RC-S3", "5", "C", "3", "COMPACT", "2.00"},
+            {"F5-RC-S6", "5", "C", "6", "REGULAR", "5.00"},
+            {"F5-RH-S7", "5", "H", "7", "HANDICAPPED", "2.00"},
+            {"F1-RV-S1", "1", "V", "1", "RESERVED", "10.00"},
+            {"F2-RV-S1", "2", "V", "1", "RESERVED", "10.00"},
+            {"F3-RV-S1", "3", "V", "1", "RESERVED", "10.00"},
+            {"F4-RV-S1", "4", "V", "1", "RESERVED", "10.00"},
+            {"F5-RV-S1", "5", "V", "1", "RESERVED", "10.00"}
+        };
+
+        String insertSql = "INSERT INTO parking_spot (spot_id, floor_number, row_label, spot_number, type, hourly_rate, is_occupied, current_vehicle_plate) VALUES (?, ?, ?, ?, ?, ?, 0, NULL)";
+        try (PreparedStatement pstmt = connection.prepareStatement(insertSql)) {
+            for (String[] spot : defaultSpots) {
+                pstmt.setString(1, spot[0]);
+                pstmt.setInt(2, Integer.parseInt(spot[1]));
+                pstmt.setString(3, spot[2]);
+                pstmt.setInt(4, Integer.parseInt(spot[3]));
+                pstmt.setString(5, spot[4]);
+                pstmt.setDouble(6, Double.parseDouble(spot[5]));
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
     public void deleteParkingSpot(String spotId) {
         String sql = "DELETE FROM parking_spot WHERE spot_id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {

@@ -25,6 +25,6 @@ public class Main {
 
         PaymentStrategy payment = new CardPayment();
 
-        exitService.processExit("ABC1234", payment);
+        exitService.processExit("ABC1234", payment, true);
     }
 }

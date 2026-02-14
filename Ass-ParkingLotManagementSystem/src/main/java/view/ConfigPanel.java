@@ -32,18 +32,21 @@ public class ConfigPanel extends JPanel {
         leftPanel.add(scrollPane, BorderLayout.CENTER);
         
         // Floor management buttons
-        JPanel floorButtonPanel = new JPanel(new GridLayout(1, 3, 5, 5));
+        JPanel floorButtonPanel = new JPanel(new GridLayout(2, 3, 5, 5));
         JButton btnAddFloor = new JButton("Add Floor");
         JButton btnDeleteFloor = new JButton("Delete Floor");
         JButton btnRefreshFloors = new JButton("Refresh");
+        JButton btnResetToDefault = new JButton("Reset to Default");
         
         btnAddFloor.addActionListener(e -> addFloor());
         btnDeleteFloor.addActionListener(e -> deleteFloor());
         btnRefreshFloors.addActionListener(e -> refreshFloorList());
+        btnResetToDefault.addActionListener(e -> resetToDefault());
         
         floorButtonPanel.add(btnAddFloor);
         floorButtonPanel.add(btnDeleteFloor);
         floorButtonPanel.add(btnRefreshFloors);
+        floorButtonPanel.add(btnResetToDefault);
         leftPanel.add(floorButtonPanel, BorderLayout.SOUTH);
         
         add(leftPanel, BorderLayout.WEST);
@@ -204,6 +207,20 @@ public class ConfigPanel extends JPanel {
             
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Invalid number format.");
+        }
+    }
+
+    private void resetToDefault() {
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "This will delete all current parking spots and reset to default (42 spots across 5 floors).\nAre you sure?",
+            "Reset to Default",
+            JOptionPane.YES_NO_OPTION);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            db.resetParkingSpotsToDefault();
+            parkingLot.reloadFromDatabase();
+            refreshFloorList();
+            JOptionPane.showMessageDialog(this, "Parking spots have been reset to default!");
         }
     }
 }

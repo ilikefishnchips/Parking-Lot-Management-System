@@ -35,4 +35,11 @@ public abstract class Vehicle {
         int hours = (int) Math.ceil(minutesParked / 60.0); // Round up to nearest hour
         return Math.max(hours, 1); // Minimum 1 hour
     }
+
+    // --------------------------
+    // Method: get effective hourly rate (handicapped discount)
+    // --------------------------
+    public double getEffectiveHourlyRate(ParkingSpot spot) {
+        return spot.getHourlyRate(); // default: no discount
+    }
 }

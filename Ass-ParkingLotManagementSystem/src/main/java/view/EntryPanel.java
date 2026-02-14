@@ -13,6 +13,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class EntryPanel extends JPanel {
@@ -121,6 +122,9 @@ public class EntryPanel extends JPanel {
         // Get available spots from ParkingLot
         ParkingLot parkingLot = ParkingLot.getInstance();
         List<ParkingSpot> availableSpots = parkingLot.findAvailableSpots(vehicleType);
+        
+        // Sort spots by spot ID in ascending order
+        Collections.sort(availableSpots, (s1, s2) -> s1.getSpotId().compareTo(s2.getSpotId()));
         
         if (availableSpots.isEmpty()) {
             cmbSpots.addItem(new ParkingSpotWrapper(null)); // Add a "No spots available" item

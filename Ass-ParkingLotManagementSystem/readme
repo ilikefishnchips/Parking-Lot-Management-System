@@ -1,0 +1,27 @@
+1.Database Setup
+Start your MySQL server (make sure it is running on localhost:3306).
+
+2.Create the database
+Open a MySQL client (e.g., phpMyAdmin, MySQL Workbench, or command line) and run:
+
+CREATE DATABASE parkinglot_db;
+
+3.Import the provided SQL dump
+The file parkinglot_db.sql contains all table structures and initial data (5 floors with default spots).
+
+
+Compilation & Execution
+
+1.Using the provided batch file (Windows)
+Simply double‑click run.bat or run it from the command prompt:
+
+bash
+run.bat
+
+The script will:
+
+    -Compile all Java files listed in sources.txt
+
+    -Place compiled classes into the bin/ folder
+
+    -Launch the GUI (main.java.view.MainGUI)

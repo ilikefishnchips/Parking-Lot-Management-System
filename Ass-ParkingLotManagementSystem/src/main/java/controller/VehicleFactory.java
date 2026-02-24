@@ -1,5 +1,6 @@
 package main.java.controller;
 
+import main.java.model.Bus;
 import main.java.model.Car;
 import main.java.model.HandicappedVehicle;
 import main.java.model.Motorcycle;
@@ -19,6 +20,10 @@ public class VehicleFactory {
                 return new SUV(plate);
             case "handicapped":
                 return new HandicappedVehicle(plate);
+            // FUTURE-PROOFING: Adding new vehicle type (Bus)
+            // To activate: Uncomment the line below and ensure Bus.java is compiled
+            // case "bus":
+            //     return new Bus(plate);
             default:
                 throw new IllegalArgumentException("Unknown vehicle type: " + type);
         }

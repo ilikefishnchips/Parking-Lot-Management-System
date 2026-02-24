@@ -41,7 +41,10 @@ public class EntryPanel extends JPanel {
         inputPanel.add(txtPlate);
 
         inputPanel.add(new JLabel("Vehicle Type:"));
-        String[] types = {"Motorcycle", "Car", "SUV", "Handicapped"};
+        // FUTURE-PROOFING: Adding new vehicle type (Bus)
+        // To activate: Uncomment "Bus" in the array below
+        // Also ensure Bus.java is compiled and VehicleFactory handles "bus" case
+        String[] types = {"Motorcycle", "Car", "SUV", "Handicapped"}; // , "Bus";
         cmbVehicleType = new JComboBox<>(types);
         inputPanel.add(cmbVehicleType);
 

@@ -203,6 +203,11 @@ public class ParkingLot {
                     case "handicapped":
                         vehicle = new HandicappedVehicle(entry.licensePlate);
                         break;
+                    // FUTURE-PROOFING: Adding Bus vehicle type loading
+                    // To activate: Uncomment the lines below and ensure Bus.java is available
+                    // case "bus":
+                    //     vehicle = new Bus(entry.licensePlate);
+                    //     break;
                     default:
                         vehicle = new Car(entry.licensePlate);
                 }
@@ -251,6 +256,11 @@ public class ParkingLot {
                 allowedTypes.add(ParkingSpotType.HANDICAPPED);
                 allowedTypes.add(ParkingSpotType.RESERVED);
                 break;
+            // FUTURE-PROOFING: Adding Bus vehicle type
+            // To activate: Uncomment the lines below
+            // case "bus":
+            //     allowedTypes.add(ParkingSpotType.REGULAR);
+            //     break;
         }
         
         for (ParkingSpot spot : allSpots.values()) {
@@ -375,6 +385,82 @@ public class ParkingLot {
     public int getOccupiedSpotsCount() { 
         return (int) (getOverallOccupancy() * allSpots.size()); 
     }
+    
+    // FUTURE-PROOFING: Reservation System
+    // To activate: Uncomment the following methods and field
+    
+    // private List<Reservation> reservations;
+    
+    // /**
+    //  * Initialize the reservations list.
+    //  * Call this in the constructor after other initializations.
+    //  */
+    // private void initReservations() {
+    //     this.reservations = new ArrayList<>();
+    //     // Load reservations from database if needed
+    //     // loadReservationsFromDatabase();
+    // }
+    
+    // /**
+    //  * Adds a new reservation to the system.
+    //  * 
+    //  * @param r The reservation to add
+    //  */
+    // public void addReservation(Reservation r) {
+    //     reservations.add(r);
+    //     // Save to database: DatabaseManager.getInstance().saveReservation(r);
+    // }
+    
+    // /**
+    //  * Checks if a specific spot is reserved at a given time.
+    //  * 
+    //  * @param spot The parking spot to check
+    //  * @param time The time to check
+    //  * @return true if the spot is reserved for that time
+    //  */
+    // public boolean isSpotReserved(ParkingSpot spot, LocalDateTime time) {
+    //     for (Reservation r : reservations) {
+    //         if (r.isValidAt(time)) {
+    //             // Check if reservation matches this spot (by ID or type)
+    //             boolean spotIdMatch = r.getSpotId() == null || r.getSpotId().equals(spot.getSpotId());
+    //             boolean spotTypeMatch = r.getSpotType() == spot.getType();
+    //             if (spotIdMatch && spotTypeMatch) {
+    //                 return true;
+    //             }
+    //         }
+    //     }
+    //     return false;
+    // }
+    
+    // /**
+    //  * Finds a reservation for a specific license plate at a given time.
+    //  * 
+    //  * @param licensePlate The license plate to find reservation for
+    //  * @param time The time to check
+    //  * @return The reservation if found, null otherwise
+    //  */
+    // public Reservation findReservation(String licensePlate, LocalDateTime time) {
+    //     for (Reservation r : reservations) {
+    //         if (r.isValidAt(time) && r.getLicensePlate().equals(licensePlate)) {
+    //             return r;
+    //         }
+    //     }
+    //     return null;
+    // }
+    
+    // /**
+    //  * Cancels a reservation.
+    //  * 
+    //  * @param reservationId The ID of the reservation to cancel
+    //  */
+    // public void cancelReservation(String reservationId) {
+    //     for (Reservation r : reservations) {
+    //         if (r.getReservationId().equals(reservationId)) {
+    //             r.setActive(false);
+    //             break;
+    //         }
+    //     }
+    // }
     
     // Print parking lot status
     public void printParkingLotStatus() {

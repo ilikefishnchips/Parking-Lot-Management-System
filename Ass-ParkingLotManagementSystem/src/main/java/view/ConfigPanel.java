@@ -71,7 +71,9 @@ public class ConfigPanel extends JPanel {
         spotForm.add(txtSpotNumber);
         
         spotForm.add(new JLabel("Spot Type:"));
-        cmbSpotType = new JComboBox<>(new String[]{"COMPACT", "REGULAR", "HANDICAPPED", "RESERVED"});
+        // FUTURE-PROOFING: Adding ELECTRIC spot type
+        // To activate: Uncomment "ELECTRIC" in the array below
+        cmbSpotType = new JComboBox<>(new String[]{"COMPACT", "REGULAR", "HANDICAPPED", "RESERVED"}); // , "ELECTRIC"
         spotForm.add(cmbSpotType);
         
         spotForm.add(new JLabel("Hourly Rate (RM):"));

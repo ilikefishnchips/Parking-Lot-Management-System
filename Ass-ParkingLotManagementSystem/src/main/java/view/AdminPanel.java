@@ -220,7 +220,10 @@ private JScrollPane createRevenuePanel() {
 
         JPanel topPanel = new JPanel();
         JLabel lblScheme = new JLabel("Select Fine Scheme:");
-        String[] schemes = {"Fixed", "Progressive", "Hourly"};
+        // FUTURE-PROOFING: Adding Capped fine scheme
+        // To activate: Uncomment "Capped (max RM500)" in the array below
+        // Also ensure CappedFineScheme.java is compiled
+        String[] schemes = {"Fixed", "Progressive", "Hourly"}; // , "Capped (max RM500)";
         JComboBox<String> cmbScheme = new JComboBox<>(schemes);
         JButton btnApply = new JButton("Apply Scheme");
         topPanel.add(lblScheme);
@@ -239,6 +242,11 @@ private JScrollPane createRevenuePanel() {
                 case "Fixed":       fineService.setFineScheme(new FixedFineScheme()); break;
                 case "Progressive": fineService.setFineScheme(new ProgressiveFineScheme()); break;
                 case "Hourly":      fineService.setFineScheme(new HourlyFineScheme()); break;
+                // FUTURE-PROOFING: Adding Capped fine scheme
+                // To activate: Uncomment the case below
+                // case "Capped (max RM500)":
+                //     fineService.setFineScheme(new CappedFineScheme(new HourlyFineScheme(), 500.0));
+                //     break;
             }
             JOptionPane.showMessageDialog(panel,
                     "Fine scheme changed to " + selected + " (Applied to future fines only)");
